@@ -1,7 +1,6 @@
 package tn.fst.spring.ordersservice.saga;
 
-import com.ecommerce.shared.commands.*;
-import com.ecommerce.shared.events.*;
+
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.gateway.CommandGateway;
@@ -11,6 +10,12 @@ import org.axonframework.modelling.saga.SagaLifecycle;
 import org.axonframework.modelling.saga.StartSaga;
 import org.axonframework.spring.stereotype.Saga;
 import org.springframework.beans.factory.annotation.Autowired;
+import tn.fst.spring.sharedkernel.commands.CancelOrderCommand;
+import tn.fst.spring.sharedkernel.commands.ConfirmOrderCommand;
+import tn.fst.spring.sharedkernel.commands.ReserveStockCommand;
+import tn.fst.spring.sharedkernel.commands.ValidatePaymentCommand;
+import tn.fst.spring.sharedkernel.events.*;
+import tn.fst.spring.sharedkernel.valueobjects.Money;
 
 import java.util.UUID;
 

@@ -1,8 +1,6 @@
 package tn.fst.spring.ordersservice.command.agregate;
 
-import com.ecommerce.shared.commands.*;
-import com.ecommerce.shared.events.*;
-import com.ecommerce.shared.valueobjects.*;
+
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.CommandHandler;
@@ -10,6 +8,15 @@ import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
 import org.axonframework.spring.stereotype.Aggregate;
+import tn.fst.spring.sharedkernel.commands.CancelOrderCommand;
+import tn.fst.spring.sharedkernel.commands.ConfirmOrderCommand;
+import tn.fst.spring.sharedkernel.commands.CreateOrderCommand;
+import tn.fst.spring.sharedkernel.events.OrderCancelledEvent;
+import tn.fst.spring.sharedkernel.events.OrderConfirmedEvent;
+import tn.fst.spring.sharedkernel.events.OrderCreatedEvent;
+import tn.fst.spring.sharedkernel.valueobjects.Address;
+import tn.fst.spring.sharedkernel.valueobjects.Money;
+import tn.fst.spring.sharedkernel.valueobjects.OrderLineItem;
 
 import java.time.Instant;
 import java.util.List;

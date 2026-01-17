@@ -4,6 +4,8 @@ package tn.fst.spring.ordersservice.query.api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import tn.fst.spring.ordersservice.query.models.OrderReadModel;
+import tn.fst.spring.ordersservice.query.repository.OrderRepository;
 
 import java.util.List;
 

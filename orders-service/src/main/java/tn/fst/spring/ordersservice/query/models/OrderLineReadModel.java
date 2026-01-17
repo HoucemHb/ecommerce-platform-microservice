@@ -1,7 +1,7 @@
 package tn.fst.spring.ordersservice.query.models;
 
+import jakarta.persistence.*;
 import lombok.Data;
-import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;

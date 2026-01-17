@@ -1,13 +1,17 @@
 package tn.fst.spring.ordersservice.query.projections;
 
-import com.ecommerce.orders.query.models.*;
-import com.ecommerce.orders.query.repository.OrderRepository;
-import com.ecommerce.shared.events.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.eventhandling.EventHandler;
 import org.axonframework.eventhandling.ResetHandler;
 import org.springframework.stereotype.Component;
+import tn.fst.spring.ordersservice.query.models.OrderLineReadModel;
+import tn.fst.spring.ordersservice.query.models.OrderReadModel;
+import tn.fst.spring.ordersservice.query.repository.OrderRepository;
+import tn.fst.spring.sharedkernel.events.OrderCancelledEvent;
+import tn.fst.spring.sharedkernel.events.OrderConfirmedEvent;
+import tn.fst.spring.sharedkernel.events.OrderCreatedEvent;
 
 @Component
 @RequiredArgsConstructor
