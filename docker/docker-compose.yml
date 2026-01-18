@@ -1,0 +1,331 @@
+version: '3.8'
+
+services:
+
+  # ===========================================
+  # INFRASTRUCTURE SERVICES
+  # ===========================================
+
+  axon-server:
+    image: axoniq/axonserver:latest
+    hostname: axon-server
+    container_name: axon-server
+    ports:
+      - "8024:8024"
+      - "8124:8124"
+    environment:
+      - AXONIQ_AXONSERVER_DEVMODE_ENABLED=true
+    networks:
+      - ecommerce-network
+    volumes:
+      - axon-data:/data
+      - axon-events:/eventdata
+      - axon-config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8024/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-orders:
+    image: postgres:15-alpine
+    container_name: postgres-orders
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: orders_user
+      POSTGRES_PASSWORD: orders_pass
+    ports:
+      - "5432:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-orders-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orders_user -d orders_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-products:
+    image: postgres:15-alpine
+    container_name: postgres-products
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: products_user
+      POSTGRES_PASSWORD: products_pass
+    ports:
+      - "5433:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-products-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U products_user -d products_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-payments:
+    image: postgres:15-alpine
+    container_name: postgres-payments
+    environment:
+      POSTGRES_DB: payments_db
+      POSTGRES_USER: payments_user
+      POSTGRES_PASSWORD: payments_pass
+    ports:
+      - "5434:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-payments-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payments_user -d payments_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-notifications:
+    image: postgres:15-alpine
+    container_name: postgres-notifications
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: notifications_user
+      POSTGRES_PASSWORD: notifications_pass
+    ports:
+      - "5435:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-notifications-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifications_user -d notifications_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - ecommerce-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  discovery-server:
+    build:
+      context: ../infrastructure/discovery-server
+      dockerfile: Dockerfile
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ../infrastructure/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discovery-server
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # MICROSERVICES
+  # ===========================================
+
+  orders-service:
+    build:
+      context: ../orders-service
+      dockerfile: Dockerfile
+    container_name: orders-service
+    depends_on:
+      axon-server:
+        condition: service_healthy
+      postgres-orders:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-orders:5432/orders_db
+      - SPRING_DATASOURCE_USERNAME=orders_user
+      - SPRING_DATASOURCE_PASSWORD=orders_pass
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+
+  products-service:
+    build:
+      context: ../products-service
+      dockerfile: Dockerfile
+    container_name: products-service
+    depends_on:
+      axon-server:
+        condition: service_healthy
+      postgres-products:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-products:5432/products_db
+      - SPRING_DATASOURCE_USERNAME=products_user
+      - SPRING_DATASOURCE_PASSWORD=products_pass
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+
+  payments-service:
+    build:
+      context: ../payments-service
+      dockerfile: Dockerfile
+    container_name: payments-service
+    depends_on:
+      axon-server:
+        condition: service_healthy
+      postgres-payments:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-payments:5432/payments_db
+      - SPRING_DATASOURCE_USERNAME=payments_user
+      - SPRING_DATASOURCE_PASSWORD=payments_pass
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+
+  notifications-service:
+    build:
+      context: ../notifications-service
+      dockerfile: Dockerfile
+    container_name: notifications-service
+    depends_on:
+      axon-server:
+        condition: service_healthy
+      postgres-notifications:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    ports:
+      - "8084:8084"
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-notifications:5432/notifications_db
+      - SPRING_DATASOURCE_USERNAME=notifications_user
+      - SPRING_DATASOURCE_PASSWORD=notifications_pass
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+
+# ===========================================
+# NETWORKS & VOLUMES
+# ===========================================
+
+networks:
+  ecommerce-network:
+    driver: bridge
+
+volumes:
+  axon-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/axon-data"
+      o: bind
+
+  axon-events:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/axon-events"
+      o: bind
+
+  axon-config:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/axon-config"
+      o: bind
+
+  postgres-orders-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/pg-orders"
+      o: bind
+
+  postgres-products-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/pg-products"
+      o: bind
+
+  postgres-payments-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/pg-payments"
+      o: bind
+
+  postgres-notifications-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/pg-notifications"
+      o: bind
