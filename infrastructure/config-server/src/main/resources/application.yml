@@ -1,39 +1,55 @@
+# ===========================================
+# CONFIG SERVER - application.yml
+# File: infrastructure/config-server/src/main/resources/application.yml
+# ===========================================
+
 spring:
   application:
     name: config-server
-
   profiles:
-    active: native   # Default profile (local development)
-
+    active: native  # Force native profile
   cloud:
     config:
       server:
         native:
-          # Location of microservice configuration files
-          # Example: order-service.yml, payment-service-dev.yml, gateway.yml
-          search-locations: classpath:/config
+          search-locations: classpath:/config,file:/config
+        git:
+          uri: https://github.com/spring-cloud-samples/config-repo  # Fallback, won't be used
+          default-label: main
+          skip-ssl-validation: true
 
 server:
-  port: 8888   # Config Server port
+  port: 8888
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,env,configprops
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.config: DEBUG
+    org.springframework.boot: INFO
 
 ---
-# =========================
-# Docker Profile
-# =========================
+# ===========================================
+# DOCKER PROFILE
+# ===========================================
 spring:
   config:
     activate:
       on-profile: docker
-
   cloud:
     config:
       server:
         native:
-          # Same location, but profile-specific if needed later
-          search-locations: classpath:/config
+          search-locations: classpath:/config,file:/config  # Both locations
+        bootstrap: true
+
+logging:
+  level:
+    org.springframework.cloud.config: INFO

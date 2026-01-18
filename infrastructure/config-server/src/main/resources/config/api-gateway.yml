@@ -1,51 +1,37 @@
+# ===========================================
+# API GATEWAY - application.yml
+# File: infrastructure/api-gateway/src/main/resources/application.yml
+# ===========================================
+
 spring:
   application:
     name: api-gateway
   cloud:
     gateway:
       routes:
+        # Orders Service
         - id: orders-service
-          uri: lb://orders-service
+          uri: http://orders-service:8081
           predicates:
             - Path=/api/orders/**
-          filters:
-            - RewritePath=/api/orders/(?<segment>.*), /api/orders/$\{segment}
-
+        
+        # Products Service
         - id: products-service
-          uri: lb://products-service
+          uri: http://products-service:8082
           predicates:
             - Path=/api/products/**
-          filters:
-            - RewritePath=/api/products/(?<segment>.*), /api/products/$\{segment}
-
+        
+        # Payments Service
         - id: payments-service
-          uri: lb://payments-service
+          uri: http://payments-service:8083
           predicates:
             - Path=/api/payments/**
-          filters:
-            - RewritePath=/api/payments/(?<segment>.*), /api/payments/$\{segment}
-
+        
+        # Notifications Service
         - id: notifications-service
-          uri: lb://notifications-service
+          uri: http://notifications-service:8084
           predicates:
             - Path=/api/notifications/**
-          filters:
-            - RewritePath=/api/notifications/(?<segment>.*), /api/notifications/$\{segment}
-
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
-
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
 
 server:
   port: 8080
@@ -61,14 +47,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway
+        include: health,info,gateway,routes
+  endpoint:
+    health:
+      show-details: always
 
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+    org.springframework.web: INFO
 
 ---
-# Docker Profile
+# ===========================================
+# DOCKER PROFILE
+# ===========================================
 spring:
   config:
     activate:
@@ -77,4 +69,4 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      defaultZone: http://discovery-server:8761/eureka/

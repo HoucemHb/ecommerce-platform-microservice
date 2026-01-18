@@ -1,20 +1,26 @@
+# ===========================================
+# ORDERS SERVICE - bootstrap.yml
+# File: orders-service/src/main/resources/bootstrap.yml
+# ===========================================
+
 spring:
   application:
     name: orders-service
+  
   cloud:
     config:
-      uri: http://localhost:8888  # Config Server URL
-      fail-fast: true  # Fail if config server is down
-      retry:
-        initial-interval: 1000
-        max-attempts: 6
+      enabled: false  # ✅ DISABLE Config Server for now - use application.yml
+      fail-fast: false
 
 ---
-# Docker Profile
+# ===========================================
+# DOCKER PROFILE
+# ===========================================
 spring:
   config:
     activate:
       on-profile: docker
+  
   cloud:
     config:
-      uri: http://config-server:8888
+      enabled: false  # ✅ Keep disabled - use application.yml with docker profile

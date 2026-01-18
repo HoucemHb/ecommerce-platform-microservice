@@ -1,35 +1,38 @@
+# ===========================================
+# ORDERS SERVICE - application.yml
+# File: orders-service/src/main/resources/application.yml
+# ===========================================
+
 spring:
   application:
     name: orders-service
-  profiles:
-    active: docker
-
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  
+  # Datasource - Local Development
   datasource:
     url: jdbc:postgresql://localhost:5432/orders_db
     username: orders_user
     password: orders_pass
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-
+# Server Configuration
 server:
   port: 8081
 
-axon:
-  axonserver:
-    servers: localhost:8124
-  serializer:
-    general: jackson
-    events: jackson
-    messages: jackson
-
+# Eureka Client - Local Development
 eureka:
   client:
     service-url:
@@ -38,7 +41,24 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.value}
 
+# Axon Configuration - Local Development
+axon:
+  axonserver:
+    servers: localhost:8124
+    context: default
+    enabled: true
+    connect-timeout: 30000
+    client-id: orders-service
+  
+  # Serializer Configuration
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+
+# Management & Actuator
 management:
   endpoints:
     web:
@@ -47,29 +67,53 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    db:
+      enabled: true
 
+# Logging
 logging:
   level:
-    com.ecommerce: DEBUG
+    tn.fst.spring.ordersservice: DEBUG
     org.axonframework: INFO
+    org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 ---
-# Docker Profile
+# ===========================================
+# DOCKER PROFILE
+# ===========================================
 spring:
   config:
     activate:
       on-profile: docker
+  
+  # Datasource - Docker
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:postgresql://postgres-orders:5432/orders_db
+    username: orders_user
+    password: orders_pass
 
-axon:
-  axonserver:
-    servers: ${AXON_AXONSERVER_SERVERS}
-
+# Eureka Client - Docker
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    hostname: orders-service
+    prefer-ip-address: false
+
+# Axon - Docker
+axon:
+  axonserver:
+    servers: axon-server:8124  # ✅ No http://, just hostname:port
+    context: default  # ✅ Must match Axon Server context
+    keep-alive-time: 5000  # ✅ Added
+    keep-alive-timeout: 10000  # ✅ Added
+
+logging:
+  level:
+    org.axonframework: DEBUG  # ✅ See what's happening
+    io.axoniq.axonserver: DEBUG  # ✅ Axon Server client logs
+
