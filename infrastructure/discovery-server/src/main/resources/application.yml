@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: discovery-server
+
+server:
+  port: 8761
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    register-with-eureka: false  # Don't register itself
+    fetch-registry: false         # Don't fetch registry
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+---
+# Docker Profile
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+eureka:
+  instance:
+    hostname: discovery-server
+  client:
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/

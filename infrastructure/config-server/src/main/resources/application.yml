@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: config-server
+
+  profiles:
+    active: native   # Default profile (local development)
+
+  cloud:
+    config:
+      server:
+        native:
+          # Location of microservice configuration files
+          # Example: order-service.yml, payment-service-dev.yml, gateway.yml
+          search-locations: classpath:/config
+
+server:
+  port: 8888   # Config Server port
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+---
+# =========================
+# Docker Profile
+# =========================
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  cloud:
+    config:
+      server:
+        native:
+          # Same location, but profile-specific if needed later
+          search-locations: classpath:/config
