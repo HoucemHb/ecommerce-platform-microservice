@@ -6,13 +6,14 @@ services:
   # INFRASTRUCTURE SERVICES
   # ===========================================
 
+  # Axon Server - Event Store & Message Routing
   axon-server:
     image: axoniq/axonserver:latest
     hostname: axon-server
     container_name: axon-server
     ports:
-      - "8024:8024"
-      - "8124:8124"
+      - "8024:8024"  # gRPC port
+      - "8124:8124"  # HTTP port
     environment:
       - AXONIQ_AXONSERVER_DEVMODE_ENABLED=true
     networks:
@@ -27,6 +28,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # PostgreSQL - Orders Database
   postgres-orders:
     image: postgres:15-alpine
     container_name: postgres-orders
@@ -46,6 +48,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # PostgreSQL - Products Database
   postgres-products:
     image: postgres:15-alpine
     container_name: postgres-products
@@ -65,6 +68,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # PostgreSQL - Payments Database
   postgres-payments:
     image: postgres:15-alpine
     container_name: postgres-payments
@@ -84,6 +88,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # PostgreSQL - Notifications Database
   postgres-notifications:
     image: postgres:15-alpine
     container_name: postgres-notifications
@@ -103,6 +108,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # Kafka & Zookeeper (Optional - Axon uses its own messaging)
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -135,36 +141,73 @@ services:
       timeout: 10s
       retries: 5
 
+  # ===========================================
+  # CONFIG SERVER - MUST START FIRST
+  # ===========================================
+
+  config-server:
+    build:
+      context: ../            # points to ecommerce-platform root
+      dockerfile: infrastructure/config-server/Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # DISCOVERY SERVER - DEPENDS ON CONFIG SERVER
+  # ===========================================
+
   discovery-server:
     build:
       context: ../infrastructure/discovery-server
       dockerfile: Dockerfile
     container_name: discovery-server
+    depends_on:
+      config-server:
+        condition: service_healthy
     ports:
       - "8761:8761"
     networks:
       - ecommerce-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # ===========================================
+  # API GATEWAY - DEPENDS ON CONFIG & DISCOVERY
+  # ===========================================
+
   api-gateway:
     build:
       context: ../infrastructure/api-gateway
       dockerfile: Dockerfile
     container_name: api-gateway
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
     ports:
       - "8080:8080"
-    depends_on:
-      - discovery-server
     networks:
       - ecommerce-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
@@ -176,17 +219,20 @@ services:
   # MICROSERVICES
   # ===========================================
 
+  # Orders Service
   orders-service:
     build:
       context: ../orders-service
       dockerfile: Dockerfile
     container_name: orders-service
     depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
       axon-server:
         condition: service_healthy
       postgres-orders:
-        condition: service_healthy
-      discovery-server:
         condition: service_healthy
     ports:
       - "8081:8081"
@@ -194,23 +240,33 @@ services:
       - ecommerce-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-orders:5432/orders_db
       - SPRING_DATASOURCE_USERNAME=orders_user
       - SPRING_DATASOURCE_PASSWORD=orders_pass
       - AXON_AXONSERVER_SERVERS=axon-server:8124
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
+  # Products Service
   products-service:
     build:
       context: ../products-service
       dockerfile: Dockerfile
     container_name: products-service
     depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
       axon-server:
         condition: service_healthy
       postgres-products:
-        condition: service_healthy
-      discovery-server:
         condition: service_healthy
     ports:
       - "8082:8082"
@@ -218,23 +274,33 @@ services:
       - ecommerce-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-products:5432/products_db
       - SPRING_DATASOURCE_USERNAME=products_user
       - SPRING_DATASOURCE_PASSWORD=products_pass
       - AXON_AXONSERVER_SERVERS=axon-server:8124
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
+  # Payments Service
   payments-service:
     build:
       context: ../payments-service
       dockerfile: Dockerfile
     container_name: payments-service
     depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
       axon-server:
         condition: service_healthy
       postgres-payments:
-        condition: service_healthy
-      discovery-server:
         condition: service_healthy
     ports:
       - "8083:8083"
@@ -242,23 +308,33 @@ services:
       - ecommerce-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-payments:5432/payments_db
       - SPRING_DATASOURCE_USERNAME=payments_user
       - SPRING_DATASOURCE_PASSWORD=payments_pass
       - AXON_AXONSERVER_SERVERS=axon-server:8124
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
+  # Notifications Service
   notifications-service:
     build:
       context: ../notifications-service
       dockerfile: Dockerfile
     container_name: notifications-service
     depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
       axon-server:
         condition: service_healthy
       postgres-notifications:
-        condition: service_healthy
-      discovery-server:
         condition: service_healthy
     ports:
       - "8084:8084"
@@ -266,11 +342,18 @@ services:
       - ecommerce-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-notifications:5432/notifications_db
       - SPRING_DATASOURCE_USERNAME=notifications_user
       - SPRING_DATASOURCE_PASSWORD=notifications_pass
       - AXON_AXONSERVER_SERVERS=axon-server:8124
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 # ===========================================
 # NETWORKS & VOLUMES

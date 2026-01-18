@@ -3,7 +3,7 @@ package tn.fst.spring.ordersservice.command.api.requests;
 import lombok.Data;
 
 @Data
-class OrderLineItemRequest {
+public class OrderLineItemRequest {
     private String productId;
     private int quantity;
     private java.math.BigDecimal unitPrice;

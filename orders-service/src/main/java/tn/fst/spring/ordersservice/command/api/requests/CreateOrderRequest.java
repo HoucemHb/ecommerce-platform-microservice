@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-class CreateOrderRequest {
+public class CreateOrderRequest {
     private String customerId;
     private List<OrderLineItemRequest> items;
     private AddressRequest shippingAddress;
