@@ -102,7 +102,7 @@ const EcommerceDashboard = () => {
   // Dashboard Stats
   const stats = {
     totalOrders: orders.length,
-    totalRevenue: payments.reduce((sum, p) => sum + (p.amount?.value || 0), 0),
+    totalRevenue: payments.reduce((sum, p) => sum + (p.amount || 0), 0),
     activeProducts: products.filter(p => p.availableStock > 0).length,
     pendingNotifications: notifications.filter(n => n.status === 'PENDING').length
   };
@@ -145,7 +145,7 @@ const EcommerceDashboard = () => {
             {order.status}
           </span>
         </div>
-        
+
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Items:</span>
@@ -153,7 +153,7 @@ const EcommerceDashboard = () => {
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Total:</span>
-            <span className="font-bold text-green-600">${order.totalAmount?.value?.toFixed(2) || '0.00'}</span>
+            <span className="font-bold text-green-600">${order.totalAmount?.toFixed(2) || '0.00'}</span>
           </div>
           <div className="text-xs text-gray-500 mt-2">
             {order.shippingAddress?.street}, {order.shippingAddress?.city}
@@ -163,13 +163,13 @@ const EcommerceDashboard = () => {
         <div className="flex gap-2">
           {order.status === 'PENDING' && (
             <>
-              <button 
+              <button
                 onClick={() => confirmOrder(order.orderId)}
                 className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-green-600 hover:to-green-700 transition-all"
               >
                 <Check size={16} className="inline mr-1" /> Confirm
               </button>
-              <button 
+              <button
                 onClick={() => cancelOrder(order.orderId, 'User requested')}
                 className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-red-600 hover:to-red-700 transition-all"
               >
@@ -193,15 +193,15 @@ const EcommerceDashboard = () => {
           {product.availableStock > 0 ? 'In Stock' : 'Out of Stock'}
         </div>
       </div>
-      
+
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold text-gray-800">${product.price?.value?.toFixed(2) || '0.00'}</span>
+          <span className="text-2xl font-bold text-gray-800">${product.price?.toFixed(2) || '0.00'}</span>
           <span className="text-sm text-gray-600">Stock: {product.availableStock}</span>
         </div>
-        
+
         <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
+          <div
             className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
             style={{ width: `${Math.min((product.availableStock / 100) * 100, 100)}%` }}
           />
@@ -235,7 +235,7 @@ const EcommerceDashboard = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Product Name</label>
@@ -320,7 +320,7 @@ const EcommerceDashboard = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Order ID</label>
@@ -423,7 +423,7 @@ const EcommerceDashboard = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Payment ID</label>
@@ -435,7 +435,7 @@ const EcommerceDashboard = () => {
                 <option value="">Select a payment</option>
                 {payments.map(payment => (
                   <option key={payment.paymentId} value={payment.paymentId}>
-                    Payment #{payment.paymentId?.substring(0, 8)} - ${payment.amount?.value}
+                    Payment #{payment.paymentId?.substring(0, 8)} - ${payment.amount}
                   </option>
                 ))}
               </select>
@@ -524,7 +524,7 @@ const EcommerceDashboard = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="p-6 space-y-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Customer ID</label>
@@ -551,14 +551,14 @@ const EcommerceDashboard = () => {
                     onChange={(e) => {
                       const product = products.find(p => p.productId === e.target.value);
                       updateItem(index, 'productId', e.target.value);
-                      if (product) updateItem(index, 'unitPrice', product.price?.value || 0);
+                      if (product) updateItem(index, 'unitPrice', product.price || 0);
                     }}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Product</option>
                     {products.map(p => (
                       <option key={p.productId} value={p.productId}>
-                        {p.name} (${p.price?.value})
+                        {p.name} (${p.price})
                       </option>
                     ))}
                   </select>
@@ -657,7 +657,7 @@ const EcommerceDashboard = () => {
                 <p className="text-sm text-gray-500">Microservices Architecture</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <input
@@ -669,7 +669,7 @@ const EcommerceDashboard = () => {
                 />
                 <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
               </div>
-              
+
               <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-all">
                 <Bell size={24} className="text-gray-600" />
                 {notifications.filter(n => n.status === 'PENDING').length > 0 && (
@@ -844,7 +844,7 @@ const EcommerceDashboard = () => {
                           <td className="px-6 py-4 text-sm text-gray-800 font-mono">{payment.paymentId?.substring(0, 8)}</td>
                           <td className="px-6 py-4 text-sm text-gray-600 font-mono">{payment.orderId?.substring(0, 8)}</td>
                           <td className="px-6 py-4 text-sm text-gray-600">{payment.customerId}</td>
-                          <td className="px-6 py-4 text-sm font-bold text-green-600">${payment.amount?.value?.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-sm font-bold text-green-600">${payment.amount?.toFixed(2)}</td>
                           <td className="px-6 py-4 text-sm text-gray-600">{payment.paymentMethod}</td>
                           <td className="px-6 py-4">
                             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">

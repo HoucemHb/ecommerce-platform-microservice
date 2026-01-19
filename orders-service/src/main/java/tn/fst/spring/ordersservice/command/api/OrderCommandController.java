@@ -13,6 +13,7 @@ import tn.fst.spring.sharedkernel.valueobjects.Address;
 import tn.fst.spring.sharedkernel.valueobjects.Money;
 import tn.fst.spring.sharedkernel.valueobjects.OrderLineItem;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +48,7 @@ public class OrderCommandController {
                         request.getShippingAddress().getZipCode(),
                         request.getShippingAddress().getCountry()
                 ),
-                Money.of(request.getTotalAmount(), "USD")
+                Money.of(new BigDecimal(5000), "USD")
         );
 
         return commandGateway.send(command)
