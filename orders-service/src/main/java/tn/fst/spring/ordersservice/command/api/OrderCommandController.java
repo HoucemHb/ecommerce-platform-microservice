@@ -37,7 +37,11 @@ public class OrderCommandController {
                         Money.of(item.getUnitPrice(), "USD")
                 ))
                 .collect(Collectors.toList());
-        Money totalAmount = Money.of(new BigDecimal("3999.98"), "USD");
+        BigDecimal total = request.getItems().stream()
+                .map(item -> item.getUnitPrice().multiply(new BigDecimal(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Money totalAmount = Money.of(total, "USD");
 
         CreateOrderCommand command = new CreateOrderCommand(
                 orderId,
@@ -50,7 +54,6 @@ public class OrderCommandController {
                         request.getShippingAddress().getCountry()
                 ),
                 totalAmount
-//                Money.of(request.getTotalAmount(), "USD")
         );
 
         return commandGateway.send(command)

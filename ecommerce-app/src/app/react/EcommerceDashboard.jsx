@@ -513,130 +513,287 @@ const EcommerceDashboard = () => {
       });
     };
 
+  //   return (
+  //     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  //       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+  //         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
+  //           <div className="flex justify-between items-center">
+  //             <h2 className="text-2xl font-bold">Create New Order</h2>
+  //             <button onClick={() => setShowModal(false)} className="hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all">
+  //               <X size={24} />
+  //             </button>
+  //           </div>
+  //         </div>
+  //
+  //         <div className="p-6 space-y-6">
+  //           <div>
+  //             <label className="block text-sm font-semibold text-gray-700 mb-2">Customer ID</label>
+  //             <input
+  //               type="text"
+  //               value={formData.customerId}
+  //               onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+  //               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+  //               placeholder="Enter customer ID"
+  //             />
+  //           </div>
+  //
+  //           <div>
+  //             <div className="flex justify-between items-center mb-3">
+  //               <label className="text-sm font-semibold text-gray-700">Order Items</label>
+  //               <button onClick={addItem} className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-all">
+  //                 <Plus size={16} className="inline mr-1" /> Add Item
+  //               </button>
+  //             </div>
+  //             {formData.items.map((item, index) => (
+  //               <div key={index} className="grid grid-cols-4 gap-3 mb-3 p-4 bg-gray-50 rounded-lg">
+  //                 <select
+  //                   value={item.productId}
+  //                   onChange={(e) => {
+  //                     const product = products.find(p => p.productId === e.target.value);
+  //                     updateItem(index, 'productId', e.target.value);
+  //                     if (product) updateItem(index, 'unitPrice', product.price || 0);
+  //                   }}
+  //                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+  //                 >
+  //                   <option value="">Select Product</option>
+  //                   {products.map(p => (
+  //                     <option key={p.productId} value={p.productId}>
+  //                       {p.name} (${p.price})
+  //                     </option>
+  //                   ))}
+  //                 </select>
+  //                 <input
+  //                   type="number"
+  //                   placeholder="Quantity"
+  //                   value={item.quantity}
+  //                   onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
+  //                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+  //                 />
+  //                 <input
+  //                   type="number"
+  //                   placeholder="Price"
+  //                   value={item.unitPrice}
+  //                   onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value))}
+  //                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+  //                 />
+  //                 <button
+  //                   onClick={() => removeItem(index)}
+  //                   className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all"
+  //                 >
+  //                   <X size={16} />
+  //                 </button>
+  //               </div>
+  //             ))}
+  //           </div>
+  //
+  //           <div className="grid grid-cols-2 gap-4">
+  //             <input
+  //               type="text"
+  //               placeholder="Street"
+  //               value={formData.shippingAddress.street}
+  //               onChange={(e) => setFormData({ ...formData, shippingAddress: { ...formData.shippingAddress, street: e.target.value } })}
+  //               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+  //             />
+  //             <input
+  //               type="text"
+  //               placeholder="City"
+  //               value={formData.shippingAddress.city}
+  //               onChange={(e) => setFormData({ ...formData, shippingAddress: { ...formData.shippingAddress, city: e.target.value } })}
+  //               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+  //             />
+  //             <input
+  //               type="text"
+  //               placeholder="ZIP Code"
+  //               value={formData.shippingAddress.zipCode}
+  //               onChange={(e) => setFormData({ ...formData, shippingAddress: { ...formData.shippingAddress, zipCode: e.target.value } })}
+  //               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+  //             />
+  //             <input
+  //               type="text"
+  //               placeholder="Country"
+  //               value={formData.shippingAddress.country}
+  //               onChange={(e) => setFormData({ ...formData, shippingAddress: { ...formData.shippingAddress, country: e.target.value } })}
+  //               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+  //             />
+  //           </div>
+  //
+  //           <div>
+  //             <label className="block text-sm font-semibold text-gray-700 mb-2">Total Amount</label>
+  //             <input
+  //               type="number"
+  //               value={formData.totalAmount}
+  //               onChange={(e) => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) })}
+  //               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+  //               placeholder="0.00"
+  //             />
+  //           </div>
+  //
+  //           <button
+  //             onClick={handleSubmit}
+  //             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+  //           >
+  //             Create Order
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Create New Order</h2>
-              <button onClick={() => setShowModal(false)} className="hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all">
-                <X size={24} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Create New Order</h2>
+                <button
+                    onClick={() => setShowModal(false)}
+                    className="hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-6">
+
+              {/* Customer ID */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Customer ID</label>
+                <input
+                    type="text"
+                    value={formData.customerId}
+                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Enter customer ID"
+                />
+              </div>
+
+              {/* Order Items */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-sm font-semibold text-gray-700">Order Items</label>
+                  <button
+                      onClick={addItem}
+                      className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-all"
+                  >
+                    <Plus size={16} className="inline mr-1" /> Add Item
+                  </button>
+                </div>
+
+                {/* Calcul des sous-totaux et du total */}
+                {formData.items.map((item, index) => {
+                  const subtotal = (item.quantity || 0) * (item.unitPrice || 0);
+                  return (
+                      <div key={index} className="grid grid-cols-5 gap-3 mb-3 p-4 bg-gray-50 rounded-lg items-center">
+                        <select
+                            value={item.productId}
+                            onChange={(e) => {
+                              const product = products.find(p => p.productId === e.target.value);
+                              updateItem(index, 'productId', e.target.value);
+                              if (product) updateItem(index, 'unitPrice', product.price || 0);
+                            }}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select Product</option>
+                          {products.map(p => (
+                              <option key={p.productId} value={p.productId}>
+                                {p.name} (${p.price})
+                              </option>
+                          ))}
+                        </select>
+
+                        {/* Quantity */}
+                        <input
+                            type="number"
+                            placeholder="Quantity"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                        />
+
+                        {/* Unit Price (text) */}
+                        <span className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex items-center">
+                  ${item.unitPrice?.toFixed(2) || '0.00'}
+                </span>
+
+                        {/* Subtotal (text) */}
+                        <span className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex items-center">
+                  ${subtotal.toFixed(2)}
+                </span>
+
+                        {/* Remove button */}
+                        <button
+                            onClick={() => removeItem(index)}
+                            className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                  );
+                })}
+              </div>
+
+              {/* Shipping Address */}
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                    type="text"
+                    placeholder="Street"
+                    value={formData.shippingAddress.street}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      shippingAddress: { ...formData.shippingAddress, street: e.target.value }
+                    })}
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                    type="text"
+                    placeholder="City"
+                    value={formData.shippingAddress.city}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      shippingAddress: { ...formData.shippingAddress, city: e.target.value }
+                    })}
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                    type="text"
+                    placeholder="ZIP Code"
+                    value={formData.shippingAddress.zipCode}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      shippingAddress: { ...formData.shippingAddress, zipCode: e.target.value }
+                    })}
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                    type="text"
+                    placeholder="Country"
+                    value={formData.shippingAddress.country}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      shippingAddress: { ...formData.shippingAddress, country: e.target.value }
+                    })}
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Total Amount */}
+              <div className="text-right font-bold text-xl text-gray-800 mt-4">
+                Total: ${formData.items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unitPrice || 0)), 0).toFixed(2)}
+              </div>
+
+              {/* Submit */}
+              <button
+                  onClick={handleSubmit}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+              >
+                Create Order
               </button>
             </div>
           </div>
-
-          <div className="p-6 space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Customer ID</label>
-              <input
-                type="text"
-                value={formData.customerId}
-                onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Enter customer ID"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <label className="text-sm font-semibold text-gray-700">Order Items</label>
-                <button onClick={addItem} className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition-all">
-                  <Plus size={16} className="inline mr-1" /> Add Item
-                </button>
-              </div>
-              {formData.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-4 gap-3 mb-3 p-4 bg-gray-50 rounded-lg">
-                  <select
-                    value={item.productId}
-                    onChange={(e) => {
-                      const product = products.find(p => p.productId === e.target.value);
-                      updateItem(index, 'productId', e.target.value);
-                      if (product) updateItem(index, 'unitPrice', product.price || 0);
-                    }}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Product</option>
-                    {products.map(p => (
-                      <option key={p.productId} value={p.productId}>
-                        {p.name} (${p.price})
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    placeholder="Quantity"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={item.unitPrice}
-                    onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={() => removeItem(index)}
-                    className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-all"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Street"
-                value={formData.shippingAddress.street}
-                onChange={(e) => setFormData({ ...formData, shippingAddress: { ...formData.shippingAddress, street: e.target.value } })}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                placeholder="City"
-                value={formData.shippingAddress.city}
-                onChange={(e) => setFormData({ ...formData, shippingAddress: { ...formData.shippingAddress, city: e.target.value } })}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                placeholder="ZIP Code"
-                value={formData.shippingAddress.zipCode}
-                onChange={(e) => setFormData({ ...formData, shippingAddress: { ...formData.shippingAddress, zipCode: e.target.value } })}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                placeholder="Country"
-                value={formData.shippingAddress.country}
-                onChange={(e) => setFormData({ ...formData, shippingAddress: { ...formData.shippingAddress, country: e.target.value } })}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Total Amount</label>
-              <input
-                type="number"
-                value={formData.totalAmount}
-                onChange={(e) => setFormData({ ...formData, totalAmount: parseFloat(e.target.value) })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
-              />
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
-            >
-              Create Order
-            </button>
-          </div>
         </div>
-      </div>
     );
   };
 

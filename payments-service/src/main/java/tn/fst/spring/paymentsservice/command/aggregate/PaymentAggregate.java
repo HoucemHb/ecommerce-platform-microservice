@@ -1,6 +1,5 @@
 package tn.fst.spring.paymentsservice.command.aggregate;
 
-
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.CommandHandler;
@@ -33,31 +32,78 @@ public class PaymentAggregate {
 
     @CommandHandler
     public PaymentAggregate(ValidatePaymentCommand command) {
-        log.info("Handling ValidatePaymentCommand for paymentId: {}", command.getPaymentId());
+        log.info("=== PAYMENT VALIDATION STARTED ===");
+        log.info("PaymentId: {}", command.getPaymentId());
+        log.info("OrderId: {}", command.getOrderId());
+        log.info("CustomerId: {}", command.getCustomerId());
+        log.info("TotalAmount: {}", command.getTotalAmount());
+        log.info("PaymentMethod: {}", command.getPaymentMethod());
+
+        // Additional debug logging
+        if (command.getTotalAmount() != null && command.getTotalAmount().getAmount() != null) {
+            log.info("Amount value: {} {}",
+                    command.getTotalAmount().getAmount(),
+                    command.getTotalAmount().getCurrency());
+        }
+
+        // CRITICAL FIX: Use getTotalAmount() not getAmount()
+        if (command.getTotalAmount() == null) {
+            log.error("TotalAmount is NULL!");
+            AggregateLifecycle.apply(new PaymentFailedEvent(
+                    command.getPaymentId(),
+                    command.getOrderId(),
+                    command.getTotalAmount(),
+                    "Payment amount is null",
+                    Instant.now()
+            ));
+            return;
+        }
+
+        if (command.getTotalAmount().getAmount() == null) {
+            log.error("TotalAmount.amount is NULL!");
+            AggregateLifecycle.apply(new PaymentFailedEvent(
+                    command.getPaymentId(),
+                    command.getOrderId(),
+                    command.getTotalAmount(),
+                    "Payment amount value is null",
+                    Instant.now()
+            ));
+            return;
+        }
 
         // Validation
-        if (command.getAmount().getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Payment amount must be positive");
+        if (command.getTotalAmount().getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            log.error("Invalid amount: {}", command.getTotalAmount().getAmount());
+            AggregateLifecycle.apply(new PaymentFailedEvent(
+                    command.getPaymentId(),
+                    command.getOrderId(),
+                    command.getTotalAmount(),
+                    "Payment amount must be positive",
+                    Instant.now()
+            ));
+            return;
         }
 
         // Simulate payment gateway validation (80% success rate)
-        boolean paymentSuccessful = simulatePaymentGateway();
+        boolean paymentSuccess = simulatePaymentGateway();
 
-        if (paymentSuccessful) {
+        if (paymentSuccess) {
+            log.info("Payment validation SUCCESSFUL - applying PaymentValidatedEvent");
             AggregateLifecycle.apply(new PaymentValidatedEvent(
                     command.getPaymentId(),
                     command.getOrderId(),
                     command.getCustomerId(),
-                    command.getAmount(),
+                    command.getTotalAmount(),
                     command.getPaymentMethod(),
                     Instant.now()
             ));
         } else {
+            log.error("Payment validation FAILED - simulated gateway rejection");
             AggregateLifecycle.apply(new PaymentFailedEvent(
                     command.getPaymentId(),
                     command.getOrderId(),
-                    command.getAmount(),
-                    "Payment gateway declined the transaction",
+                    command.getTotalAmount(),
+                    "Payment gateway rejected the transaction (simulated)",
                     Instant.now()
             ));
         }
@@ -114,7 +160,9 @@ public class PaymentAggregate {
         }
 
         // 80% success rate for demo purposes
-        return new Random().nextDouble() < 0.8;
+        boolean success = new Random().nextDouble() < 0.8;
+        log.info("Payment gateway simulation result: {}", success ? "SUCCESS" : "FAILED");
+        return success;
     }
 
     public enum PaymentStatus {
