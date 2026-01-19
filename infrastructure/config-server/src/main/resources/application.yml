@@ -2,19 +2,23 @@ spring:
   application:
     name: config-server
 
+  config:
+    activate:
+      on-profile: default
+
   profiles:
-    active: native   # Default profile (local development)
+    active: native
 
   cloud:
     config:
       server:
+        git:
+          enabled: false
         native:
-          # Location of microservice configuration files
-          # Example: order-service.yml, payment-service-dev.yml, gateway.yml
           search-locations: classpath:/config
 
 server:
-  port: 8888   # Config Server port
+  port: 8888
 
 management:
   endpoints:
@@ -23,17 +27,15 @@ management:
         include: health,info
 
 ---
-# =========================
-# Docker Profile
-# =========================
 spring:
   config:
     activate:
-      on-profile: docker
+      on-profile: docker  # ← C’est comme ça qu’on active un document
 
   cloud:
     config:
       server:
+        git:
+          enabled: false
         native:
-          # Same location, but profile-specific if needed later
           search-locations: classpath:/config
