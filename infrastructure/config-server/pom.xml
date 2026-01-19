@@ -5,13 +5,12 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- === Projet indépendant === -->
     <groupId>com.ecommerce</groupId>
     <artifactId>config-server</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <!-- === Parent Spring Boot === -->
+    <!-- Parent Spring Boot -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -38,15 +37,21 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Web (nécessaire pour exposer le serveur config) -->
+        <!-- Web Server -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- (Optionnel mais recommandé) Validation et Binding -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
     </dependencies>
 
-    <!-- === Spring Cloud BOM (obligatoire) === -->
+    <!-- Spring Cloud BOM -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -59,7 +64,6 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- === Plugin build === -->
     <build>
         <plugins>
             <plugin>

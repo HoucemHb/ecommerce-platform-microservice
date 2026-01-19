@@ -9,5 +9,5 @@ public class CreateOrderRequest {
     private String customerId;
     private List<OrderLineItemRequest> items;
     private AddressRequest shippingAddress;
-    private java.math.BigDecimal totalAmount;
+    private java.math.BigDecimal totalAmount= java.math.BigDecimal.valueOf(5000);
 }
