@@ -1,5 +1,6 @@
 package tn.fst.spring.ordersservice.query.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -18,6 +19,7 @@ public class OrderLineReadModel {
 
     @ManyToOne
     @JoinColumn(name = "order_id")
+    @JsonBackReference
     private OrderReadModel order;
 
     private String productId;

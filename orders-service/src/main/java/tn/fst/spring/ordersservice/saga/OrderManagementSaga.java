@@ -37,6 +37,7 @@ public class OrderManagementSaga {
     @SagaEventHandler(associationProperty = "orderId")
     public void handle(OrderCreatedEvent event) {
         log.info("Saga started for order: {}", event.getOrderId());
+        log.info("with Amout: {}", event.getTotalAmount());
 
         this.orderId = event.getOrderId();
         this.customerId = event.getCustomerId();

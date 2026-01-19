@@ -1,13 +1,10 @@
 spring:
   application:
     name: products-service
+
   cloud:
     config:
       uri: http://localhost:8888
-      fail-fast: true
-      retry:
-        initial-interval: 1000
-        max-attempts: 6
 
 ---
 spring:
@@ -17,3 +14,8 @@ spring:
   cloud:
     config:
       uri: http://config-server:8888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/

@@ -9,8 +9,7 @@ spring:
   
   cloud:
     config:
-      enabled: false  # ✅ DISABLE Config Server for now - use application.yml
-      fail-fast: false
+      uri: http://localhost:8888
 
 ---
 # ===========================================
@@ -20,7 +19,6 @@ spring:
   config:
     activate:
       on-profile: docker
-  
   cloud:
     config:
-      enabled: false  # ✅ Keep disabled - use application.yml with docker profile
+      uri: http://config-server:8888

@@ -6,30 +6,31 @@
 spring:
   application:
     name: api-gateway
+
   cloud:
     gateway:
       routes:
         # Orders Service
         - id: orders-service
-          uri: http://orders-service:8081
+          uri: lb://ORDERS-SERVICE
           predicates:
             - Path=/api/orders/**
-        
+
         # Products Service
         - id: products-service
-          uri: http://products-service:8082
+          uri: lb://PRODUCTS-SERVICE
           predicates:
             - Path=/api/products/**
-        
+
         # Payments Service
         - id: payments-service
-          uri: http://payments-service:8083
+          uri: lb://PAYMENTS-SERVICE
           predicates:
             - Path=/api/payments/**
-        
+
         # Notifications Service
         - id: notifications-service
-          uri: http://notifications-service:8084
+          uri: lb://NOTIFICATIONS-SERVICE
           predicates:
             - Path=/api/notifications/**
 
@@ -54,10 +55,11 @@ management:
 
 logging:
   level:
-    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway: DEBUG
     org.springframework.web: INFO
 
 ---
+
 # ===========================================
 # DOCKER PROFILE
 # ===========================================
@@ -70,3 +72,5 @@ eureka:
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true

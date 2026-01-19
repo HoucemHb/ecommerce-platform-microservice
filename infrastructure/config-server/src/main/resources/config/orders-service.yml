@@ -74,11 +74,11 @@ management:
 # Logging
 logging:
   level:
-    tn.fst.spring.ordersservice: DEBUG
+    io.axoniq.axonserver.connector.impl.HeartbeatMonitor: OFF
+    io.axoniq.axonserver.connector: WARN
     org.axonframework: INFO
-    org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
 
 ---
 # ===========================================
@@ -114,6 +114,10 @@ axon:
 
 logging:
   level:
-    org.axonframework: DEBUG  # ✅ See what's happening
-    io.axoniq.axonserver: DEBUG  # ✅ Axon Server client logs
+    io.axoniq.axonserver.connector.impl.HeartbeatMonitor: OFF
+    io.axoniq.axonserver.connector: WARN
+    org.axonframework: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+
 
