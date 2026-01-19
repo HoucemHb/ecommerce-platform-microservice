@@ -30,18 +30,25 @@ public class OrderManagementSaga {
     private String orderId;
     private String customerId;
     private Money totalAmount;
-    private boolean stockReserved = false;
+
+    // Track stock reservations
+    private int expectedStockReservations = 0;
+    private int completedStockReservations = 0;
+
     private boolean paymentValidated = false;
 
     @StartSaga
     @SagaEventHandler(associationProperty = "orderId")
     public void handle(OrderCreatedEvent event) {
         log.info("Saga started for order: {}", event.getOrderId());
-        log.info("with Amout: {}", event.getTotalAmount());
+        log.info("with Amount: {}", event.getTotalAmount());
 
         this.orderId = event.getOrderId();
         this.customerId = event.getCustomerId();
         this.totalAmount = event.getTotalAmount();
+        this.expectedStockReservations = event.getItems().size();
+
+        log.info("Expecting {} stock reservations", expectedStockReservations);
 
         // Step 1: Reserve stock for each product
         event.getItems().forEach(item -> {
@@ -56,30 +63,43 @@ public class OrderManagementSaga {
 
     @SagaEventHandler(associationProperty = "orderId")
     public void handle(StockReservedEvent event) {
-        log.info("Stock reserved for order: {}", event.getOrderId());
-        this.stockReserved = true;
+        log.info("Stock reserved for product {} in order: {}", event.getProductId(), event.getOrderId());
+        log.info("Saga state - orderId: {}, customerId: {}, totalAmount: {}",
+                this.orderId, this.customerId, this.totalAmount);
 
-        // Step 2: Once stock is reserved, validate payment
-        String paymentId = UUID.randomUUID().toString();
-        SagaLifecycle.associateWith("paymentId", paymentId);
+        // Verify the saga instance is correctly loaded
+        if (this.orderId == null) {
+            log.error("CRITICAL: Saga state not loaded correctly!");
+            return;
+        }
 
-        log.info("Validating payment for order: {}", orderId);
-        commandGateway.send(new ValidatePaymentCommand(
-                paymentId,
-                orderId,
-                customerId,
-                totalAmount,
-                "CREDIT_CARD"
-        ));
+        completedStockReservations++;
+        log.info("Stock reservations: {}/{}", completedStockReservations, expectedStockReservations);
+
+        // Only proceed to payment validation when ALL stock is reserved
+        if (completedStockReservations == expectedStockReservations) {
+            log.info("All stock reserved, proceeding to payment validation");
+
+            String paymentId = UUID.randomUUID().toString();
+            SagaLifecycle.associateWith("paymentId", paymentId);
+
+            commandGateway.send(new ValidatePaymentCommand(
+                    paymentId,
+                    this.orderId,
+                    this.customerId,
+                    this.totalAmount,
+                    "CREDIT_CARD"
+            ));
+        }
     }
 
     @SagaEventHandler(associationProperty = "orderId")
     public void handle(StockReservationFailedEvent event) {
         log.error("Stock reservation failed for order: {}", event.getOrderId());
 
-        // Cancel the order
+        // Cancel the order immediately if any stock reservation fails
         commandGateway.send(new CancelOrderCommand(
-                orderId,
+                this.orderId,
                 "Insufficient stock: " + event.getReason()
         ));
     }
@@ -90,20 +110,16 @@ public class OrderManagementSaga {
         this.paymentValidated = true;
 
         // Step 3: Confirm the order
-        commandGateway.send(new ConfirmOrderCommand(orderId));
+        commandGateway.send(new ConfirmOrderCommand(this.orderId));
     }
 
     @SagaEventHandler(associationProperty = "orderId")
     public void handle(PaymentFailedEvent event) {
         log.error("Payment failed for order: {}", event.getOrderId());
 
-        // Release reserved stock
-        // In real scenario, we'd track which products had stock reserved
-        // For now, simplified
-
         // Cancel the order
         commandGateway.send(new CancelOrderCommand(
-                orderId,
+                this.orderId,
                 "Payment failed: " + event.getReason()
         ));
     }

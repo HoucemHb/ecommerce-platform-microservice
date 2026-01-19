@@ -119,5 +119,7 @@ logging:
     org.axonframework: INFO
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql: WARN
+    org.axonframework.modelling.saga: DEBUG
+    org.axonframework.eventhandling: DEBUG
 
 

@@ -1,14 +1,23 @@
 package tn.fst.spring.sharedkernel.valueobjects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Value
 public class Money implements Serializable {
     BigDecimal amount;
     String currency;
+
+    @JsonCreator
+    public Money(
+            @JsonProperty("amount") BigDecimal amount,
+            @JsonProperty("currency") String currency) {
+        this.amount = amount;
+        this.currency = currency;
+    }
 
     public static Money of(BigDecimal amount, String currency) {
         return new Money(amount, currency);
