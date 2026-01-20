@@ -160,24 +160,24 @@ const EcommerceDashboard = () => {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          {order.status === 'PENDING' && (
-            <>
-              <button
-                onClick={() => confirmOrder(order.orderId)}
-                className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-green-600 hover:to-green-700 transition-all"
-              >
-                <Check size={16} className="inline mr-1" /> Confirm
-              </button>
-              <button
-                onClick={() => cancelOrder(order.orderId, 'User requested')}
-                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-red-600 hover:to-red-700 transition-all"
-              >
-                <X size={16} className="inline mr-1" /> Cancel
-              </button>
-            </>
-          )}
-        </div>
+        {/*<div className="flex gap-2">*/}
+        {/*  {order.status === 'PENDING' && (*/}
+        {/*    <>*/}
+        {/*      <button*/}
+        {/*        onClick={() => confirmOrder(order.orderId)}*/}
+        {/*        className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-green-600 hover:to-green-700 transition-all"*/}
+        {/*      >*/}
+        {/*        <Check size={16} className="inline mr-1" /> Confirm*/}
+        {/*      </button>*/}
+        {/*      <button*/}
+        {/*        onClick={() => cancelOrder(order.orderId, 'User requested')}*/}
+        {/*        className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-red-600 hover:to-red-700 transition-all"*/}
+        {/*      >*/}
+        {/*        <X size={16} className="inline mr-1" /> Cancel*/}
+        {/*      </button>*/}
+        {/*    </>*/}
+        {/*  )}*/}
+        {/*</div>*/}
       </div>
     );
   };
