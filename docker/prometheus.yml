@@ -1,0 +1,26 @@
+# =====================================
+# Configuration Prometheus pour vos microservices Spring Boot
+# =====================================
+
+global:
+  scrape_interval: 15s       # fréquence à laquelle Prometheus scrape les métriques
+  evaluation_interval: 15s   # fréquence d’évaluation des règles (si tu ajoutes des alertes plus tard)
+
+# -----------------------------
+# Scrape des métriques de chaque service
+# -----------------------------
+scrape_configs:
+  - job_name: 'orders-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['orders-service:8081']   # nom du service Docker + port
+
+  - job_name: 'products-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['products-service:8084']
+
+  - job_name: 'notifications-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['notifications-service:8083']

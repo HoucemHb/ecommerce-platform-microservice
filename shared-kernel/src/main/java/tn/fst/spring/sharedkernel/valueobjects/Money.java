@@ -2,15 +2,27 @@ package tn.fst.spring.sharedkernel.valueobjects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Value;
+import jakarta.persistence.Embeddable;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 
-@Value
+@Embeddable
+@ToString
+@EqualsAndHashCode
 public class Money implements Serializable {
-    BigDecimal amount;
-    String currency;
 
+    private static final long serialVersionUID = 1L;
+
+    private BigDecimal amount;
+    private String currency;
+
+    // ✅ Constructeur par défaut pour JPA
+    protected Money() {}
+
+    // ✅ Constructeur avec annotations Jackson pour Axon
     @JsonCreator
     public Money(
             @JsonProperty("amount") BigDecimal amount,
@@ -23,6 +35,16 @@ public class Money implements Serializable {
         return new Money(amount, currency);
     }
 
+    // ✅ Getters
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    // ✅ Méthodes métier
     public Money add(Money other) {
         if (!this.currency.equals(other.currency)) {
             throw new IllegalArgumentException("Cannot add different currencies");
@@ -31,6 +53,9 @@ public class Money implements Serializable {
     }
 
     public Money multiply(int quantity) {
-        return new Money(this.amount.multiply(BigDecimal.valueOf(quantity)), this.currency);
+        return new Money(
+                this.amount.multiply(BigDecimal.valueOf(quantity)),
+                this.currency
+        );
     }
 }

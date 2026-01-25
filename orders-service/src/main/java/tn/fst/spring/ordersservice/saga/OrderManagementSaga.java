@@ -1,180 +1,166 @@
 package tn.fst.spring.ordersservice.saga;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.config.ProcessingGroup;
-import org.axonframework.eventhandling.EventHandler;
-import org.springframework.stereotype.Component;
+import org.axonframework.modelling.saga.EndSaga;
+import org.axonframework.modelling.saga.SagaEventHandler;
+import org.axonframework.modelling.saga.StartSaga;
+import org.axonframework.spring.stereotype.Saga;
+import org.springframework.beans.factory.annotation.Autowired;
 import tn.fst.spring.sharedkernel.commands.*;
 import tn.fst.spring.sharedkernel.events.*;
 import tn.fst.spring.sharedkernel.valueobjects.Money;
 
-import java.util.Map;
+import java.math.BigDecimal;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Simple Process Manager - In-Memory State (No Database)
- * Handles the complete order workflow: Stock → Payment → Confirmation
+ * Axon Saga - Gère le workflow complet d'une commande : Stock → Paiement → Confirmation
  */
-@Component
+@Saga
 @Slf4j
-@RequiredArgsConstructor
-@ProcessingGroup("order-process-manager")
+@ProcessingGroup("orderManagementSagaProcessor")
 public class OrderManagementSaga {
 
-    private final CommandGateway commandGateway;
+    private transient CommandGateway commandGateway;
 
-    // In-memory state tracking
-    private final Map<String, OrderProcessState> processStates = new ConcurrentHashMap<>();
+    @Autowired
+    public void setCommandGateway(CommandGateway commandGateway) {
+        this.commandGateway = commandGateway;
+    }
 
-    @EventHandler
+    // Make these fields non-transient so they're persisted
+    private String orderId;
+    private String customerId;
+    private Money totalAmount;
+    private int expectedStockReservations;  // Remove 'transient'
+    private int completedStockReservations; // Remove 'transient'
+
+    @StartSaga
+    @SagaEventHandler(associationProperty = "orderId")
     public void on(OrderCreatedEvent event) {
+        if (commandGateway == null) {
+            log.error("❌ CommandGateway IS NULL in OrderManagementSaga");
+        }
         log.info("=== ORDER CREATED EVENT ===");
-        log.info("Order: {}", event.getOrderId());
-        log.info("Customer: {}", event.getCustomerId());
-        log.info("Amount: {}", event.getTotalAmount());
-        log.info("Items: {}", event.getItems().size());
+        log.info("OrderId: {}", event.getOrderId());
+        log.info("CustomerId: {}", event.getCustomerId());
+        log.info("TotalAmount: {}", event.getTotalAmount());
+        log.info("Items size: {}", event.getItems() != null ? event.getItems().size() : 0);
 
-        // Create process state
-        OrderProcessState state = new OrderProcessState(
-                event.getOrderId(),
-                event.getCustomerId(),
-                event.getTotalAmount(),
-                event.getItems().size()
-        );
+        // Initialize saga state
+        this.orderId = event.getOrderId();
+        this.customerId = event.getCustomerId();
+        this.totalAmount = event.getTotalAmount();
+        this.expectedStockReservations = event.getItems() != null ? event.getItems().size() : 0;
+        this.completedStockReservations = 0;
 
-        processStates.put(event.getOrderId(), state);
-        log.info("Process state created in memory");
+        log.info("Expected stock reservations: {}", this.expectedStockReservations);
+        log.info("Saga started for order: {}", orderId);
 
-        // Step 1: Reserve stock for each product
+        if (this.expectedStockReservations == 0) {
+            log.warn("No items to reserve! Proceeding directly to payment.");
+            proceedToPayment();
+            return;
+        }
+
+        // Reserve stock for each product
         event.getItems().forEach(item -> {
             log.info("Sending ReserveStockCommand for product: {}", item.getProductId());
             commandGateway.send(new ReserveStockCommand(
                     item.getProductId(),
-                    event.getOrderId(),
+                    orderId,
                     item.getQuantity()
             ));
         });
     }
 
-    @EventHandler
+    @SagaEventHandler(associationProperty = "orderId")
     public void on(StockReservedEvent event) {
+        if (commandGateway == null) {
+            log.error("❌ CommandGateway IS NULL in OrderManagementSaga");
+        }
         log.info("=== STOCK RESERVED EVENT ===");
         log.info("Product: {}, Order: {}", event.getProductId(), event.getOrderId());
 
-        OrderProcessState state = processStates.get(event.getOrderId());
+        // Increment the counter
+        completedStockReservations++;
 
-        if (state == null) {
-            log.error("No process state found for order: {}", event.getOrderId());
-            return;
-        }
+        log.info("Completed stock reservations: {}/{}",
+                completedStockReservations, expectedStockReservations);
 
-        log.info("Current state: orderId={}, customerId={}, amount={}",
-                state.orderId, state.customerId, state.totalAmount);
-
-        // Increment stock reservations
-        state.completedStockReservations++;
-
-        log.info("Stock reservations: {}/{}",
-                state.completedStockReservations, state.expectedStockReservations);
-
-        // Step 2: When all stock is reserved, validate payment
-        if (state.completedStockReservations == state.expectedStockReservations) {
+        // Check if all reservations are complete
+        if (completedStockReservations >= expectedStockReservations) {
             log.info("ALL STOCK RESERVED! Proceeding to payment validation");
-
-            String paymentId = UUID.randomUUID().toString();
-
-            log.info("Sending ValidatePaymentCommand:");
-            log.info("  - paymentId: {}", paymentId);
-            log.info("  - orderId: {}", state.orderId);
-            log.info("  - customerId: {}", state.customerId);
-            log.info("  - totalAmount: {}", state.totalAmount);
-
-            commandGateway.send(new ValidatePaymentCommand(
-                    paymentId,
-                    state.orderId,
-                    state.customerId,
-                    state.totalAmount,
-                    "CREDIT_CARD"
-            ));
+            proceedToPayment();
         }
     }
 
-    @EventHandler
+    private void proceedToPayment() {
+        if (commandGateway == null) {
+            log.error("❌ CommandGateway IS NULL in OrderManagementSaga");
+        }
+        String paymentId = UUID.randomUUID().toString();
+        log.info("Sending ValidatePaymentCommand:");
+        log.info("  paymentId: {}", paymentId);
+        log.info("  orderId: {}", orderId);
+        log.info("  customerId: {}", customerId);
+        log.info("  totalAmount: {}", totalAmount);
+
+        commandGateway.send(new ValidatePaymentCommand(
+                paymentId,
+                orderId,
+                customerId,
+                totalAmount,
+                "CREDIT_CARD"
+        ));
+    }
+
+    @EndSaga
+    @SagaEventHandler(associationProperty = "orderId")
     public void on(StockReservationFailedEvent event) {
+        if (commandGateway == null) {
+            log.error("❌ CommandGateway IS NULL in OrderManagementSaga");
+        }
         log.error("=== STOCK RESERVATION FAILED ===");
         log.error("Order: {}, Reason: {}", event.getOrderId(), event.getReason());
-
-        // Cancel the order
         commandGateway.send(new CancelOrderCommand(
                 event.getOrderId(),
                 "Stock reservation failed: " + event.getReason()
         ));
-
-        // Clean up state
-        processStates.remove(event.getOrderId());
     }
 
-    @EventHandler
+    @SagaEventHandler(associationProperty = "orderId")
     public void on(PaymentValidatedEvent event) {
         log.info("=== PAYMENT VALIDATED ===");
         log.info("Payment: {}, Order: {}", event.getPaymentId(), event.getOrderId());
-
-        // Step 3: Confirm the order
         log.info("Sending ConfirmOrderCommand for order: {}", event.getOrderId());
         commandGateway.send(new ConfirmOrderCommand(event.getOrderId()));
     }
 
-    @EventHandler
+    @EndSaga
+    @SagaEventHandler(associationProperty = "orderId")
     public void on(PaymentFailedEvent event) {
         log.error("=== PAYMENT FAILED ===");
         log.error("Order: {}, Reason: {}", event.getOrderId(), event.getReason());
-
-        // Cancel the order
         commandGateway.send(new CancelOrderCommand(
                 event.getOrderId(),
                 "Payment failed: " + event.getReason()
         ));
-
-        // Clean up state
-        processStates.remove(event.getOrderId());
     }
 
-    @EventHandler
+    @EndSaga
+    @SagaEventHandler(associationProperty = "orderId")
     public void on(OrderConfirmedEvent event) {
         log.info("=== ORDER CONFIRMED - WORKFLOW COMPLETE ===");
         log.info("Order: {}", event.getOrderId());
-
-        // Clean up state
-        processStates.remove(event.getOrderId());
     }
 
-    @EventHandler
+    @EndSaga
+    @SagaEventHandler(associationProperty = "orderId")
     public void on(OrderCancelledEvent event) {
         log.info("=== ORDER CANCELLED ===");
         log.info("Order: {}, Reason: {}", event.getOrderId(), event.getReason());
-
-        // Clean up state
-        processStates.remove(event.getOrderId());
-    }
-
-    /**
-     * Simple inner class to track order process state
-     */
-    private static class OrderProcessState {
-        String orderId;
-        String customerId;
-        Money totalAmount;
-        int expectedStockReservations;
-        int completedStockReservations = 0;
-
-        OrderProcessState(String orderId, String customerId, Money totalAmount, int expectedStockReservations) {
-            this.orderId = orderId;
-            this.customerId = customerId;
-            this.totalAmount = totalAmount;
-            this.expectedStockReservations = expectedStockReservations;
-        }
     }
 }
