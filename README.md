@@ -58,7 +58,6 @@ Event-driven notifications generated across the system.
 - **PostgreSQL 15** - Read model databases (separate per service)
 - **Axon Server** - Event store & message routing
 - **Docker & Docker Compose** - Containerization
-- **Kafka** - Additional event bus (optional)
 
 ---
 
@@ -229,7 +228,6 @@ curl http://localhost:8080/api/orders/<ORDER_ID>
 | PostgreSQL (Products)    | 5433  | Products read model|
 | PostgreSQL (Payments)    | 5434  | Payments read model|
 | PostgreSQL (Notifications)| 5435 | Notifications store|
-| Kafka            | 9092  | Event bus (optional)       |
 
 ---
 
