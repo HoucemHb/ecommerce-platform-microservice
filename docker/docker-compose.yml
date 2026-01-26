@@ -1,0 +1,433 @@
+version: '3.8'
+
+services:
+  # -------------------------------
+  # Prometheus
+  # -------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # ./ = dossier docker/
+    ports:
+      - "9090:9090"
+    depends_on:
+      - orders-service
+      - products-service
+      - notifications-service
+    networks:
+      - ecommerce-network
+
+  # -------------------------------
+  # Grafana
+  # -------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - ecommerce-network
+
+  # ===========================================
+  # INFRASTRUCTURE SERVICES
+  # ===========================================
+
+  # Axon Server - Event Store & Message Routing
+  axon-server:
+    image: axoniq/axonserver:latest
+    hostname: axon-server
+    container_name: axon-server
+    ports:
+      - "8024:8024"  # HTTP port
+      - "8124:8124"  # gRPC port
+    environment:
+      - AXONIQ_AXONSERVER_DEVMODE_ENABLED=true
+      - AXONIQ_AXONSERVER_AUTOCREATECONTEXTS=true
+      - AXONIQ_AXONSERVER_STANDALONE=true
+      - AXONIQ_AXONSERVER_ACCESSCONTROL_ENABLED=false
+      - AXONSERVER_HOSTNAME=axon-server
+      - AXONSERVER_ADVERTISE_ADDRESS=axon-server
+    networks:
+      - ecommerce-network
+    volumes:
+      - axon-data:/data
+      - axon-events:/eventdata
+      - axon-config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8024/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Orders Database
+  postgres-orders:
+    image: postgres:15-alpine
+    container_name: postgres-orders
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: orders_user
+      POSTGRES_PASSWORD: orders_pass
+    ports:
+      - "5432:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-orders-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orders_user -d orders_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Products Database
+  postgres-products:
+    image: postgres:15-alpine
+    container_name: postgres-products
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: products_user
+      POSTGRES_PASSWORD: products_pass
+    ports:
+      - "5433:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-products-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U products_user -d products_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Payments Database
+  postgres-payments:
+    image: postgres:15-alpine
+    container_name: postgres-payments
+    environment:
+      POSTGRES_DB: payments_db
+      POSTGRES_USER: payments_user
+      POSTGRES_PASSWORD: payments_pass
+    ports:
+      - "5434:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-payments-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payments_user -d payments_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Notifications Database
+  postgres-notifications:
+    image: postgres:15-alpine
+    container_name: postgres-notifications
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: notifications_user
+      POSTGRES_PASSWORD: notifications_pass
+    ports:
+      - "5435:5432"
+    networks:
+      - ecommerce-network
+    volumes:
+      - postgres-notifications-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifications_user -d notifications_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # CONFIG SERVER - MUST START FIRST
+  # ===========================================
+
+  config-server:
+    build:
+      context: ../infrastructure/config-server
+      dockerfile: Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    volumes:
+      - ../infrastructure/config-server/src/main/resources/config:/config:ro
+    environment:
+      - SPRING_PROFILES_ACTIVE=native,docker
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCHLOCATIONS=classpath:/config,file:/config
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CLOUD_CONFIG=DEBUG
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - ecommerce-network
+
+  # ===========================================
+  # DISCOVERY SERVER - DEPENDS ON CONFIG SERVER
+  # ===========================================
+
+  discovery-server:
+    build:
+      context: ../infrastructure/discovery-server
+      dockerfile: Dockerfile
+    container_name: discovery-server
+    depends_on:
+      config-server:
+        condition: service_healthy
+    ports:
+      - "8761:8761"
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # API GATEWAY - DEPENDS ON CONFIG & DISCOVERY
+  # ===========================================
+
+  api-gateway:
+    build:
+      context: ../infrastructure/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    networks:
+      - ecommerce-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # MICROSERVICES
+  # ===========================================
+
+  # Orders Service
+  orders-service:
+    build:
+      context: ..
+      dockerfile: orders-service/Dockerfile
+    container_name: orders-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-orders:5432/orders_db
+      SPRING_DATASOURCE_USERNAME: orders_user
+      SPRING_DATASOURCE_PASSWORD: orders_pass
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: orders-service
+      AXON_AXONSERVER_SERVERS: axon-server:8124
+      AXON_AXONSERVER_ENABLED: true
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      postgres-orders:
+        condition: service_healthy
+      axon-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # Products Service
+  products-service:
+    build:
+      context: ..
+      dockerfile: products-service/Dockerfile
+    container_name: products-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-products:5432/products_db
+      SPRING_DATASOURCE_USERNAME: products_user
+      SPRING_DATASOURCE_PASSWORD: products_pass
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: products-service
+      AXON_AXONSERVER_SERVERS: axon-server:8124
+      AXON_AXONSERVER_ENABLED: true
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      postgres-products:
+        condition: service_healthy
+      axon-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # Payments Service
+  payments-service:
+    build:
+      context: ..
+      dockerfile: payments-service/Dockerfile
+    container_name: payments-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-payments:5432/payments_db
+      SPRING_DATASOURCE_USERNAME: payments_user
+      SPRING_DATASOURCE_PASSWORD: payments_pass
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: payments-service
+      AXON_AXONSERVER_SERVERS: axon-server:8124
+      AXON_AXONSERVER_ENABLED: true
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      postgres-payments:
+        condition: service_healthy
+      axon-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # Notifications Service
+  notifications-service:
+    build:
+      context: ..
+      dockerfile: notifications-service/Dockerfile
+    container_name: notifications-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notifications:5432/notifications_db
+      SPRING_DATASOURCE_USERNAME: notifications_user
+      SPRING_DATASOURCE_PASSWORD: notifications_pass
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: notifications-service
+      AXON_AXONSERVER_SERVERS: axon-server:8124
+      AXON_AXONSERVER_ENABLED: true
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      postgres-notifications:
+        condition: service_healthy
+      axon-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+
+
+
+# ===========================================
+# NETWORKS & VOLUMES
+# ===========================================
+
+networks:
+  ecommerce-network:
+    driver: bridge
+
+volumes:
+  axon-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/axon-data"
+      o: bind
+
+  axon-events:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/axon-events"
+      o: bind
+
+  axon-config:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/axon-config"
+      o: bind
+
+  postgres-orders-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/pg-orders"
+      o: bind
+
+  postgres-products-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/pg-products"
+      o: bind
+
+  postgres-payments-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/pg-payments"
+      o: bind
+
+  postgres-notifications-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: "C:/docker-volumes/pg-notifications"
+      o: bind

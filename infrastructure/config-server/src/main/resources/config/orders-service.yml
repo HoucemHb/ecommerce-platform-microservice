@@ -1,0 +1,140 @@
+# ===========================================
+# ORDERS SERVICE - application.yml
+# File: orders-service/src/main/resources/application.yml
+# ===========================================
+
+spring:
+  application:
+    name: orders-service
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+  
+  # Datasource - Local Development
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orders_db
+    username: orders_user
+    password: orders_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+# Server Configuration
+server:
+  port: 8081
+
+# Eureka Client - Local Development
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.value}
+
+# Axon Configuration - Local Development
+axon:
+  axonserver:
+    servers: localhost:8124
+    context: default
+    enabled: true
+    connect-timeout: 30000
+    client-id: orders-service
+  eventhandling:
+    processors:
+      orderManagementSagaProcessor:
+        mode: TRACKING
+        initial-segment-count: 1
+
+  
+  # Serializer Configuration
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    db:
+      enabled: true
+
+# Logging
+logging:
+  level:
+    io.axoniq.axonserver.connector.impl.HeartbeatMonitor: OFF
+    io.axoniq.axonserver.connector: WARN
+    org.axonframework: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+
+---
+# ===========================================
+# DOCKER PROFILE
+# ===========================================
+spring:
+  config:
+    activate:
+      on-profile: docker
+  
+  # Datasource - Docker
+  datasource:
+    url: jdbc:postgresql://postgres-orders:5432/orders_db
+    username: orders_user
+    password: orders_pass
+
+# Eureka Client - Docker
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    hostname: orders-service
+    prefer-ip-address: false
+
+# Axon - Docker
+axon:
+  axonserver:
+    servers: axon-server:8124  # ✅ No http://, just hostname:port
+    context: default  # ✅ Must match Axon Server context
+    keep-alive-time: 5000  # ✅ Added
+    keep-alive-timeout: 10000  # ✅ Added
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+  event-handling:
+    processors:
+      orderManagementSagaProcessor:
+        mode: TRACKING
+        initial-segment-count: 1
+
+logging:
+  level:
+    io.axoniq.axonserver.connector.impl.HeartbeatMonitor: OFF
+    io.axoniq.axonserver.connector: WARN
+    org.axonframework: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+    org.axonframework.modelling.saga: DEBUG
+    org.axonframework.eventhandling: DEBUG
+
+

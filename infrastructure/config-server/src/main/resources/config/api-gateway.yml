@@ -1,0 +1,76 @@
+# ===========================================
+# API GATEWAY - application.yml
+# File: infrastructure/api-gateway/src/main/resources/application.yml
+# ===========================================
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        # Orders Service
+        - id: orders-service
+          uri: lb://ORDERS-SERVICE
+          predicates:
+            - Path=/api/orders/**
+
+        # Products Service
+        - id: products-service
+          uri: lb://PRODUCTS-SERVICE
+          predicates:
+            - Path=/api/products/**
+
+        # Payments Service
+        - id: payments-service
+          uri: lb://PAYMENTS-SERVICE
+          predicates:
+            - Path=/api/payments/**
+
+        # Notifications Service
+        - id: notifications-service
+          uri: lb://NOTIFICATIONS-SERVICE
+          predicates:
+            - Path=/api/notifications/**
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,routes
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: INFO
+
+---
+
+# ===========================================
+# DOCKER PROFILE
+# ===========================================
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true

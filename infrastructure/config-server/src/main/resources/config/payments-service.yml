@@ -1,0 +1,107 @@
+spring:
+  application:
+    name: payments-service
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payments_db
+    username: payments_user
+    password: payments_pass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+server:
+  port: 8082
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.value}
+
+axon:
+  axonserver:
+    servers: localhost:8124
+    context: default
+    enabled: true
+    connect-timeout: 30000
+    client-id: payments-service
+
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    db:
+      enabled: true
+
+logging:
+  level:
+    io.axoniq.axonserver.connector.impl.HeartbeatMonitor: OFF
+    io.axoniq.axonserver.connector: WARN
+    org.axonframework: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: jdbc:postgresql://postgres-payments:5432/payments_db
+    username: payments_user
+    password: payments_pass
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    hostname: payments-service
+    prefer-ip-address: false
+
+axon:
+  axonserver:
+    servers: axon-server:8124
+    context: default
+    keep-alive-time: 5000
+    keep-alive-timeout: 10000
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+  event-handling:
+    processors:
+      orderManagementSagaProcessor:
+        mode: TRACKING
+        initial-segment-count: 1
+
+logging:
+  level:
+    io.axoniq.axonserver.connector.impl.HeartbeatMonitor: OFF
+    io.axoniq.axonserver.connector: WARN
+    org.axonframework: INFO
