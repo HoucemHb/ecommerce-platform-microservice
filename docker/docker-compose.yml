@@ -1,6 +1,37 @@
 version: '3.8'
 
 services:
+  # -------------------------------
+  # Prometheus
+  # -------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # ./ = dossier docker/
+    ports:
+      - "9090:9090"
+    depends_on:
+      - orders-service
+      - products-service
+      - notifications-service
+    networks:
+      - ecommerce-network
+
+  # -------------------------------
+  # Grafana
+  # -------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - ecommerce-network
 
   # ===========================================
   # INFRASTRUCTURE SERVICES
@@ -339,6 +370,9 @@ services:
     networks:
       - ecommerce-network
     restart: unless-stopped
+
+
+
 
 # ===========================================
 # NETWORKS & VOLUMES

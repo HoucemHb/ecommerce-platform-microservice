@@ -3,6 +3,7 @@ package tn.fst.spring.ordersservice.query.projections;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
 import org.axonframework.eventhandling.ResetHandler;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import tn.fst.spring.sharedkernel.events.OrderCreatedEvent;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ProcessingGroup("order-projections")  // ← THIS WAS MISSING!
 public class OrderProjection {
 
     private final OrderRepository orderRepository;

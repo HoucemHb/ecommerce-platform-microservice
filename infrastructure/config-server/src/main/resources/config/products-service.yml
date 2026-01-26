@@ -32,6 +32,11 @@ axon:
     enabled: true
     connect-timeout: 30000
     client-id: products-service
+  event-handling:
+    processors:
+      orderManagementSagaProcessor:
+        mode: TRACKING
+        initial-segment-count: 1
 
   serializer:
     general: jackson
@@ -75,9 +80,22 @@ axon:
     context: default
     keep-alive-time: 5000
     keep-alive-timeout: 10000
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
+  event-handling:
+    processors:
+      orderManagementSagaProcessor:
+        mode: TRACKING
+        initial-segment-count:
 
 logging:
   level:
     io.axoniq.axonserver.connector.impl.HeartbeatMonitor: OFF
     io.axoniq.axonserver.connector: WARN
     org.axonframework: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql: WARN
+    org.axonframework.modelling.saga: DEBUG
+    org.axonframework.eventhandling: DEBUG

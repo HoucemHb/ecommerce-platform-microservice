@@ -40,7 +40,8 @@ public class Notification {
         PAYMENT_VALIDATED,
         PAYMENT_FAILED,
         STOCK_RESERVED,
-        STOCK_RESERVATION_FAILED
+        STOCK_RESERVATION_FAILED,
+        STOCK_RELEASED
     }
 
     public enum NotificationChannel {

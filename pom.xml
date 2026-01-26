@@ -13,6 +13,12 @@
 
     <name>E-Commerce Event-Driven Platform</name>
     <description>Microservices with DDD, CQRS, Event Sourcing using Axon Framework</description>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+    </dependencies>
 
     <!-- Spring Boot Parent -->
     <parent>
@@ -30,6 +36,7 @@
         <module>notifications-service</module>
         <module>infrastructure/discovery-server</module>
         <module>infrastructure/api-gateway</module>
+        <module>infrastructure/config-server</module>
     </modules>
 
     <properties>
@@ -39,6 +46,8 @@
         <lombok.version>1.18.30</lombok.version>
 
         <netty.version>4.1.94.Final</netty.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
     </properties>
 
@@ -68,6 +77,11 @@
                 <groupId>com.ecommerce</groupId>
                 <artifactId>shared-kernel</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>1.11.5</version>  <!-- Add this line -->
             </dependency>
 
             <dependency>

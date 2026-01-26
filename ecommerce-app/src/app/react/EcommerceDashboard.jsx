@@ -30,10 +30,10 @@ const EcommerceDashboard = () => {
         fetch(`${API_BASE}/payments`).then(r => r.json()).catch(() => []),
         fetch(`${API_BASE}/notifications`).then(r => r.json()).catch(() => [])
       ]);
-      setOrders(ordersRes);
-      setProducts(productsRes);
-      setPayments(paymentsRes);
-      setNotifications(notificationsRes);
+      setOrders(ordersRes.reverse());
+      setProducts(productsRes.reverse());
+      setPayments(paymentsRes.reverse());
+      setNotifications(notificationsRes.reverse());
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -54,6 +54,21 @@ const EcommerceDashboard = () => {
       console.error('Error creating order:', error);
     }
   };
+
+  const deleteProduct = async (productId) => {
+  if (!window.confirm("Voulez-vous vraiment supprimer ce produit ?")) return;
+
+  try {
+    await fetch(`${API_BASE}/products/${productId}`, { method: 'DELETE' });
+    // Mettre à jour la liste des produits après suppression
+    setProducts(products.filter(p => p.productId !== productId));
+    alert("Produit supprimé avec succès !");
+  } catch (error) {
+    console.error("Erreur lors de la suppression du produit :", error);
+    alert("Impossible de supprimer le produit.");
+  }
+};
+
 
   const confirmOrder = async (orderId) => {
     try {
@@ -99,6 +114,14 @@ const EcommerceDashboard = () => {
     }
   };
 
+  const [paymentFormData, setPaymentFormData] = useState({
+  orderId: '',
+  customerId: '',
+  amount: 0,
+  paymentMethod: 'CREDIT_CARD'
+});
+
+
   // Dashboard Stats
   const stats = {
     totalOrders: orders.length,
@@ -126,6 +149,12 @@ const EcommerceDashboard = () => {
   );
 
   const OrderCard = ({ order }) => {
+    const [formData, setFormData] = useState({
+      orderId: '',
+      customerId: '',
+      amount: 0,
+      paymentMethod: 'CREDIT_CARD'
+    });
     const statusColors = {
       PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       CONFIRMED: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -160,55 +189,75 @@ const EcommerceDashboard = () => {
           </div>
         </div>
 
-        {/*<div className="flex gap-2">*/}
-        {/*  {order.status === 'PENDING' && (*/}
-        {/*    <>*/}
-        {/*      <button*/}
-        {/*        onClick={() => confirmOrder(order.orderId)}*/}
-        {/*        className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-green-600 hover:to-green-700 transition-all"*/}
-        {/*      >*/}
-        {/*        <Check size={16} className="inline mr-1" /> Confirm*/}
-        {/*      </button>*/}
-        {/*      <button*/}
-        {/*        onClick={() => cancelOrder(order.orderId, 'User requested')}*/}
-        {/*        className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-red-600 hover:to-red-700 transition-all"*/}
-        {/*      >*/}
-        {/*        <X size={16} className="inline mr-1" /> Cancel*/}
-        {/*      </button>*/}
-        {/*    </>*/}
-        {/*  )}*/}
-        {/*</div>*/}
+    <div className="flex gap-2">
+  {order.status === 'PENDING' && (
+    <>
+      <button
+  onClick={() => {
+    console.log(order.orderId);
+    console.log(order.customerId);
+    console.log(order.totalAmount);
+
+   setPaymentFormData({
+      orderId: order.orderId,
+      customerId: order.customerId,
+      amount: order.totalAmount,
+      paymentMethod: 'CREDIT_CARD'
+    });
+    setModalType('validate-payment');
+    setShowModal(true);
+  }}
+  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-green-600 hover:to-green-700 transition-all"
+>
+  <Check size={16} className="inline mr-1" /> Pay
+</button>
+
+      <button
+        onClick={() => cancelOrder(order.orderId, 'User requested')}
+        className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-red-600 hover:to-red-700 transition-all"
+      >
+        <X size={16} className="inline mr-1" /> Cancel
+      </button>
+    </>
+  )}
+</div>
+
       </div>
     );
   };
 
-  const ProductCard = ({ product }) => (
-    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-gray-800 mb-1">{product.name}</h3>
-          <p className="text-sm text-gray-500 line-clamp-2">{product.description}</p>
-        </div>
-        <div className={`ml-4 px-3 py-1 rounded-full text-xs font-semibold ${product.availableStock > 10 ? 'bg-green-100 text-green-800' : product.availableStock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-          {product.availableStock > 0 ? 'In Stock' : 'Out of Stock'}
-        </div>
+const ProductCard = ({ product }) => (
+  <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 flex flex-col justify-between">
+    <div className="flex justify-between items-start mb-4">
+      <div className="flex-1">
+        <h3 className="text-lg font-bold text-gray-800 mb-1">{product.name}</h3>
+        <p className="text-sm text-gray-500 line-clamp-2">{product.description}</p>
       </div>
-
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold text-gray-800">${product.price?.toFixed(2) || '0.00'}</span>
-          <span className="text-sm text-gray-600">Stock: {product.availableStock}</span>
-        </div>
-
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${Math.min((product.availableStock / 100) * 100, 100)}%` }}
-          />
-        </div>
+      <div className={`ml-4 px-3 py-1 rounded-full text-xs font-semibold ${product.availableStock > 10 ? 'bg-green-100 text-green-800' : product.availableStock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+        {product.availableStock > 0 ? 'In Stock' : 'Out of Stock'}
       </div>
     </div>
-  );
+
+    <div className="space-y-2 mb-4">
+      <div className="flex justify-between items-center">
+        <span className="text-2xl font-bold text-gray-800">${product.price?.toFixed(2) || '0.00'}</span>
+        <span className="text-sm text-gray-600">Stock: {product.availableStock}</span>
+      </div>
+
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div
+          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+          style={{ width: `${Math.min((product.availableStock / 100) * 100, 100)}%` }}
+        />
+      </div>
+    </div>
+
+    {/* Bouton Supprimer centré */}
+
+  </div>
+);
+
+
 
   const CreateProductModal = () => {
     const [formData, setFormData] = useState({
@@ -304,10 +353,15 @@ const EcommerceDashboard = () => {
     });
 
     const handleSubmit = async () => {
-      await validatePayment(formData);
-      setShowModal(false);
-      setFormData({ orderId: '', customerId: '', amount: 0, paymentMethod: 'CREDIT_CARD' });
-    };
+    await validatePayment(paymentFormData);
+    setShowModal(false);
+    setPaymentFormData({
+      orderId: '',
+      customerId: '',
+      amount: 0,
+      paymentMethod: 'CREDIT_CARD'
+    });
+  };
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -325,8 +379,8 @@ const EcommerceDashboard = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Order ID</label>
               <select
-                value={formData.orderId}
-                onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
+                value={paymentFormData.orderId}
+                onChange={(e) => setPaymentFormData({ ...paymentFormData, orderId: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Select an order</option>
@@ -342,8 +396,8 @@ const EcommerceDashboard = () => {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Customer ID</label>
               <input
                 type="text"
-                value={formData.customerId}
-                onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                value={paymentFormData.customerId}
+                onChange={(e) => setPaymentFormData({ ...paymentFormData, customerId: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                 placeholder="Customer ID"
               />
@@ -354,8 +408,8 @@ const EcommerceDashboard = () => {
               <input
                 type="number"
                 step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                value={paymentFormData.amount}
+                onChange={(e) => setPaymentFormData({ ...paymentFormData, amount: parseFloat(e.target.value) })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                 placeholder="0.00"
               />
@@ -364,8 +418,8 @@ const EcommerceDashboard = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
               <select
-                value={formData.paymentMethod}
-                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                value={paymentFormData.paymentMethod}
+                onChange={(e) => setPaymentFormData({ ...paymentFormData, paymentMethod: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
               >
                 <option value="CREDIT_CARD">Credit Card</option>
@@ -967,20 +1021,14 @@ const EcommerceDashboard = () => {
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold text-gray-800">Payments History</h2>
                   <div className="flex gap-3">
-                    <button
-                      onClick={() => { setShowModal(true); setModalType('validate-payment'); }}
-                      className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg"
-                    >
-                      <Check size={20} className="inline mr-2" />
-                      Validate Payment
-                    </button>
-                    <button
+
+                    {/* <button
                       onClick={() => { setShowModal(true); setModalType('refund-payment'); }}
                       className="bg-gradient-to-r from-red-600 to-orange-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-red-700 hover:to-orange-700 transition-all shadow-lg"
                     >
                       <X size={20} className="inline mr-2" />
                       Refund Payment
-                    </button>
+                    </button> */}
                   </div>
                 </div>
                 <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">

@@ -76,6 +76,31 @@ public class NotificationEventHandler {
                 message
         );
     }
+    @EventHandler
+    public void on(StockReleasedEvent event) {
+        log.info(
+                "Handling StockReleasedEvent - orderId: {}, productId: {}, quantity: {}",
+                event.getOrderId(),
+                event.getProductId(),
+                event.getQuantity()
+        );
+
+        String message = String.format(
+                "Stock has been released for your order %s. " +
+                        "Product %s (quantity: %d) is now available again.",
+                event.getOrderId(),
+                event.getProductId(),
+                event.getQuantity()
+        );
+
+        sendNotification(
+                event.getOrderId(),
+                "customer-" + event.getOrderId(),
+                Notification.NotificationType.STOCK_RELEASED,
+                message
+        );
+    }
+
 
     @EventHandler
     public void on(PaymentValidatedEvent event) {

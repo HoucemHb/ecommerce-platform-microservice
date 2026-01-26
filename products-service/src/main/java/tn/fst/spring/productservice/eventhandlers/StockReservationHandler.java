@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.axonframework.eventhandling.EventHandler;
 import org.springframework.stereotype.Component;
+import tn.fst.spring.sharedkernel.commands.ReleaseStockCommand;
 import tn.fst.spring.sharedkernel.events.OrderCancelledEvent;
 import tn.fst.spring.sharedkernel.events.PaymentFailedEvent;
 
@@ -18,14 +19,24 @@ public class StockReservationHandler {
 
     @EventHandler
     public void on(OrderCancelledEvent event) {
-        log.info("Received OrderCancelledEvent for orderId: {}. Releasing stock...",
-                event.getOrderId());
+        log.info("Received OrderCancelledEvent for orderId: {}. Releasing stock...", event.getOrderId());
 
-        // In a real scenario, we'd need to know which products were in the order
-        // This would typically come from a read model or be included in the event
-        // For demonstration, we're showing the pattern
+        if (event.getItems() == null || event.getItems().isEmpty()) {
+            log.warn("No items in cancelled order {}", event.getOrderId());
+            return;
+        }
 
-        // commandGateway.send(new ReleaseStockCommand(productId, event.getOrderId(), quantity));
+        event.getItems().forEach(item -> {
+            log.info("Releasing {} units of product {} for order {}",
+                    item.getQuantity(), item.getProductId(), event.getOrderId());
+
+            // Envoi de la commande ReleaseStockCommand pour chaque produit
+            commandGateway.send(new ReleaseStockCommand(
+                    item.getProductId(),
+                    event.getOrderId(),
+                    item.getQuantity()
+            ));
+        });
     }
 
     @EventHandler
