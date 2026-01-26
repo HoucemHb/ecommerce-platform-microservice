@@ -4,6 +4,52 @@
 
 Production-grade microservices architecture implementing **Domain-Driven Design (DDD)**, **CQRS**, and **Event Sourcing** using **Axon Framework**. This platform demonstrates best practices for building scalable, resilient, and maintainable distributed systems.
 
+---
+
+## 🖼️ Screenshots & Visuals
+
+### 📐 Dashboard
+Global overview of platform activity and key business metrics.
+![System Architecture](screenshots/dashboard-ecommerce.png)
+
+---
+
+### 📊 Orders List
+View and manage customer orders with real-time status updates.
+![Orders List](screenshots/orders-ecommerce.png)
+
+---
+
+### 📝 New Order
+Create a new order and trigger the event-driven workflow.
+![New Order](screenshots/new_order_ecommerce.png)
+
+---
+
+### 📦 Products List
+Manage product catalog and available stock levels.
+![Products List](screenshots/products-ecommerce.png)
+
+---
+
+### ➕ New Product
+Add a new product to the catalog and initialize inventory.
+![New Product](screenshots/new-product_ecommerce.png)
+
+---
+
+### 💳 Payments
+Track payment processing and transaction states.
+![Payments](screenshots/payments-ecommerce.png)
+
+---
+
+### 📧 Notifications
+Event-driven notifications generated across the system.
+![Notifications](screenshots/notif-ecommerce.png)
+
+
+
 ### Key Technologies
 
 - **Spring Boot 3.2.0** - Microservices framework
