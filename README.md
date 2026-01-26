@@ -101,8 +101,8 @@ Event-driven notifications generated across the system.
 ```
 1. Client creates order → OrderCreatedEvent
 2. Saga reserves stock → StockReservedEvent
-3. Saga validates payment → PaymentValidatedEvent
-4. Saga confirms order → OrderConfirmedEvent
+3. User validates payment → PaymentValidatedEvent
+4. orderHandler → OrderConfirmedEvent
 5. Notifications sent at each step
 ```
 
