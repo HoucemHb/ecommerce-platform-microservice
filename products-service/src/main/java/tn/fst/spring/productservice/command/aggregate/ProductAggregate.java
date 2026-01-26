@@ -7,10 +7,7 @@ import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
 import org.axonframework.modelling.command.AggregateLifecycle;
 import org.axonframework.spring.stereotype.Aggregate;
-import tn.fst.spring.sharedkernel.commands.CreateProductCommand;
-import tn.fst.spring.sharedkernel.commands.ReleaseStockCommand;
-import tn.fst.spring.sharedkernel.commands.ReserveStockCommand;
-import tn.fst.spring.sharedkernel.commands.UpdateStockCommand;
+import tn.fst.spring.sharedkernel.commands.*;
 import tn.fst.spring.sharedkernel.events.*;
 import tn.fst.spring.sharedkernel.valueobjects.Money;
 
@@ -147,4 +144,29 @@ public class ProductAggregate {
         this.availableStock = event.getNewStock();
         log.info("Stock updated from {} to {}", event.getOldStock(), event.getNewStock());
     }
+
+    @CommandHandler
+    public void handle(DeleteProductCommand command) {
+        log.info("Handling DeleteProductCommand for productId: {}", command.getProductId());
+
+        // On peut ajouter une vérification si besoin (ex: produit déjà supprimé)
+        if (this.productId == null) {
+            log.warn("Product {} is already deleted", command.getProductId());
+            return;
+        }
+
+        AggregateLifecycle.apply(new DeleteProductEvent(command.getProductId()));
+    }
+    @EventSourcingHandler
+    public void on(DeleteProductEvent event) {
+        log.info("Product deleted: {}", event.getProductId());
+        // Pour marquer le produit comme supprimé
+        this.productId = null;
+        this.availableStock = 0;
+        if (this.reservations != null) {
+            this.reservations.clear();
+        }
+    }
+
+
 }

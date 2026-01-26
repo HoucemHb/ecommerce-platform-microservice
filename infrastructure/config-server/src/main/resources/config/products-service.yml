@@ -80,6 +80,10 @@ axon:
     context: default
     keep-alive-time: 5000
     keep-alive-timeout: 10000
+  serializer:
+    general: jackson
+    events: jackson
+    messages: jackson
   event-handling:
     processors:
       orderManagementSagaProcessor:

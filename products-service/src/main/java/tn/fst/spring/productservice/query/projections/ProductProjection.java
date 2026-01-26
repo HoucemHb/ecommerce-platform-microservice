@@ -5,13 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.axonframework.config.ProcessingGroup;
 import org.axonframework.eventhandling.EventHandler;
 import org.axonframework.eventhandling.ResetHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tn.fst.spring.productservice.query.models.ProductReadModel;
 import tn.fst.spring.productservice.query.repository.ProductRepository;
-import tn.fst.spring.sharedkernel.events.ProductCreatedEvent;
-import tn.fst.spring.sharedkernel.events.StockReleasedEvent;
-import tn.fst.spring.sharedkernel.events.StockReservedEvent;
-import tn.fst.spring.sharedkernel.events.StockUpdatedEvent;
+import tn.fst.spring.sharedkernel.events.*;
 
 @Component
 @RequiredArgsConstructor
@@ -113,4 +111,9 @@ public class ProductProjection {
         productRepository.deleteAll();
         log.info("✅ All product read models deleted");
     }
+    @EventHandler
+    public void on(DeleteProductEvent event, @Autowired ProductRepository repository) {
+        repository.deleteById(event.getProductId());
+    }
+
 }

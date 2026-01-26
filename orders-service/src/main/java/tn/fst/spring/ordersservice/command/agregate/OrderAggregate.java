@@ -83,7 +83,9 @@ public class OrderAggregate {
         AggregateLifecycle.apply(new OrderCancelledEvent(
                 command.getOrderId(),
                 command.getReason(),
-                Instant.now()
+                Instant.now(),
+                this.items // <-- inclure les produits de la commande
+
         ));
     }
 

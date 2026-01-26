@@ -23,6 +23,10 @@ import java.util.UUID;
 @ProcessingGroup("orderManagementSagaProcessor")
 public class OrderManagementSaga {
 
+    public OrderManagementSaga() {
+        // REQUIRED by Axon for saga rehydration
+    }
+
     private transient CommandGateway commandGateway;
 
     @Autowired
@@ -30,12 +34,13 @@ public class OrderManagementSaga {
         this.commandGateway = commandGateway;
     }
 
-    // Make these fields non-transient so they're persisted
     private String orderId;
     private String customerId;
-    private Money totalAmount;
-    private int expectedStockReservations;  // Remove 'transient'
-    private int completedStockReservations; // Remove 'transient'
+    private BigDecimal totalAmount;
+    private String currency;
+    private int expectedStockReservations;
+    private int completedStockReservations;
+
 
     @StartSaga
     @SagaEventHandler(associationProperty = "orderId")
@@ -52,9 +57,11 @@ public class OrderManagementSaga {
         // Initialize saga state
         this.orderId = event.getOrderId();
         this.customerId = event.getCustomerId();
-        this.totalAmount = event.getTotalAmount();
-        this.expectedStockReservations = event.getItems() != null ? event.getItems().size() : 0;
+        this.totalAmount = event.getTotalAmount().getAmount();
+        this.currency = event.getTotalAmount().getCurrency();
+        this.expectedStockReservations = event.getItems().size();
         this.completedStockReservations = 0;
+
 
         log.info("Expected stock reservations: {}", this.expectedStockReservations);
         log.info("Saga started for order: {}", orderId);
@@ -75,7 +82,7 @@ public class OrderManagementSaga {
             ));
         });
     }
-
+    @EndSaga
     @SagaEventHandler(associationProperty = "orderId")
     public void on(StockReservedEvent event) {
         if (commandGateway == null) {
@@ -93,7 +100,7 @@ public class OrderManagementSaga {
         // Check if all reservations are complete
         if (completedStockReservations >= expectedStockReservations) {
             log.info("ALL STOCK RESERVED! Proceeding to payment validation");
-            proceedToPayment();
+//            proceedToPayment();
         }
     }
 
@@ -112,7 +119,7 @@ public class OrderManagementSaga {
                 paymentId,
                 orderId,
                 customerId,
-                totalAmount,
+                new Money(totalAmount, currency),
                 "CREDIT_CARD"
         ));
     }
@@ -131,36 +138,36 @@ public class OrderManagementSaga {
         ));
     }
 
-    @SagaEventHandler(associationProperty = "orderId")
-    public void on(PaymentValidatedEvent event) {
-        log.info("=== PAYMENT VALIDATED ===");
-        log.info("Payment: {}, Order: {}", event.getPaymentId(), event.getOrderId());
-        log.info("Sending ConfirmOrderCommand for order: {}", event.getOrderId());
-        commandGateway.send(new ConfirmOrderCommand(event.getOrderId()));
-    }
+//    @SagaEventHandler(associationProperty = "orderId")
+//    public void on(PaymentValidatedEvent event) {
+//        log.info("=== PAYMENT VALIDATED ===");
+//        log.info("Payment: {}, Order: {}", event.getPaymentId(), event.getOrderId());
+//        log.info("Sending ConfirmOrderCommand for order: {}", event.getOrderId());
+//        commandGateway.send(new ConfirmOrderCommand(event.getOrderId()));
+//    }
 
-    @EndSaga
-    @SagaEventHandler(associationProperty = "orderId")
-    public void on(PaymentFailedEvent event) {
-        log.error("=== PAYMENT FAILED ===");
-        log.error("Order: {}, Reason: {}", event.getOrderId(), event.getReason());
-        commandGateway.send(new CancelOrderCommand(
-                event.getOrderId(),
-                "Payment failed: " + event.getReason()
-        ));
-    }
+//    @EndSaga
+//    @SagaEventHandler(associationProperty = "orderId")
+//    public void on(PaymentFailedEvent event) {
+//        log.error("=== PAYMENT FAILED ===");
+//        log.error("Order: {}, Reason: {}", event.getOrderId(), event.getReason());
+//        commandGateway.send(new CancelOrderCommand(
+//                event.getOrderId(),
+//                "Payment failed: " + event.getReason()
+//        ));
+//    }
 
-    @EndSaga
-    @SagaEventHandler(associationProperty = "orderId")
-    public void on(OrderConfirmedEvent event) {
-        log.info("=== ORDER CONFIRMED - WORKFLOW COMPLETE ===");
-        log.info("Order: {}", event.getOrderId());
-    }
-
-    @EndSaga
-    @SagaEventHandler(associationProperty = "orderId")
-    public void on(OrderCancelledEvent event) {
-        log.info("=== ORDER CANCELLED ===");
-        log.info("Order: {}, Reason: {}", event.getOrderId(), event.getReason());
-    }
+//    @EndSaga
+//    @SagaEventHandler(associationProperty = "orderId")
+//    public void on(OrderConfirmedEvent event) {
+//        log.info("=== ORDER CONFIRMED - WORKFLOW COMPLETE ===");
+//        log.info("Order: {}", event.getOrderId());
+//    }
+//
+//    @EndSaga
+//    @SagaEventHandler(associationProperty = "orderId")
+//    public void on(OrderCancelledEvent event) {
+//        log.info("=== ORDER CANCELLED ===");
+//        log.info("Order: {}, Reason: {}", event.getOrderId(), event.getReason());
+//    }
 }

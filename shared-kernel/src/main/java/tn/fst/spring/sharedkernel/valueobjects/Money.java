@@ -20,7 +20,7 @@ public class Money implements Serializable {
     private String currency;
 
     // ✅ Constructeur par défaut pour JPA
-    protected Money() {}
+    public Money() {}
 
     // ✅ Constructeur avec annotations Jackson pour Axon
     @JsonCreator

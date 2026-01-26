@@ -7,6 +7,7 @@ import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.fst.spring.sharedkernel.commands.CreateProductCommand;
+import tn.fst.spring.sharedkernel.commands.DeleteProductCommand;
 import tn.fst.spring.sharedkernel.commands.ReserveStockCommand;
 import tn.fst.spring.sharedkernel.commands.UpdateStockCommand;
 import tn.fst.spring.sharedkernel.valueobjects.Money;
@@ -53,6 +54,12 @@ public class ProductCommandController {
         return commandGateway.send(new ReserveStockCommand(productId, orderId, quantity))
                 .thenApply(result -> ResponseEntity.ok().<Void>build());
     }
+    @DeleteMapping("/{productId}")
+    public CompletableFuture<ResponseEntity<Void>> deleteProduct(@PathVariable String productId) {
+        return commandGateway.send(new DeleteProductCommand(productId))
+                .thenApply(result -> ResponseEntity.ok().<Void>build());
+    }
+
 }
 
 @Data
